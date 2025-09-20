@@ -1,0 +1,29 @@
+@use "@/assets/scss/_variables.scss" as *;
+@use "@/assets/scss/_mixins.scss" as *;
+
+/* Global styles centralizados */
+:root {
+  --color-primary: #{$primary};
+  --bg: #{$body-bg};
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  font-family: $font-stack;
+  background-color: var(--bg);
+}
+
+.v-application,
+.v-application__wrap,
+.v-main,
+.v-main__wrap {
+  min-height: 100vh;
+  background-color: var(--bg);
+}
+
+.container-centered {
+  @include center-flex();
+}
