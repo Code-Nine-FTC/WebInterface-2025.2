@@ -8,9 +8,9 @@
     >
       <v-list-item
         class="mt-4"
-        prepend-avatar="~/assets/icons/logo.svg"
-        title="Usuário"
-        subtitle="usuario@email.com"
+        :prepend-avatar="userAvatar"
+        :title="userName"
+        :subtitle="userEmail"
         nav
       >
       </v-list-item>
@@ -37,11 +37,7 @@
 
       <v-toolbar-title>{{ pageTitle }}</v-toolbar-title>
 
-      <v-img 
-        :width="50" 
-        :max-height="50"
-        src="~/assets/icons/logo.svg" 
-      />
+      <v-img :width="50" :max-height="50" src="../assets/icons/logo.svg" />
 
       <v-spacer></v-spacer>
 
@@ -51,11 +47,7 @@
 
       <v-menu>
         <template v-slot:activator="{ props }">
-          <v-btn
-            color="white"
-            v-bind="props"
-            icon
-          >
+          <v-btn color="white" v-bind="props" icon>
             <v-avatar size="32">
               <v-icon icon="mdi-account-circle"></v-icon>
             </v-avatar>
@@ -79,60 +71,77 @@
 </template>
 
 <script>
+import { useAuthStore } from "~/stores/auth";
+
 export default {
-  name: 'default',
+  name: "default",
   data() {
     return {
       drawer: true,
-      pageTitle: 'Home',
+      rail: false,
+      pageTitle: "Home",
       menuItems: [
+        { title: "Home", icon: "mdi-home", to: "/home", value: "home" },
         {
-          title: 'Home',
-          icon: 'mdi-home',
-          to: '/home',
-          value: 'home'
+          title: "Registrar Perfil",
+          icon: "mdi-account-plus",
+          to: "/profile-register",
+          value: "profile-register",
         },
         {
-          title: 'Registrar Perfil',
-          icon: 'mdi-account-plus',
-          to: '/profile-register',
-          value: 'profile-register'
+          title: "Stock",
+          icon: "mdi-warehouse",
+          to: "/storage",
+          value: "storage",
         },
-        {
-          title: 'Stock',
-          icon: 'mdi-warehouse',
-          to: '/storage',
-          value: 'storage'
-        }
-      ]
-    }
+      ],
+      auth: null,
+      ui: null,
+    };
+  },
+  created() {
+    this.auth = useAuthStore();
+    this.pageTitle = this.pageTitle;
   },
   mounted() {
-    this.updatePageTitle()
+    this.updatePageTitle();
   },
   watch: {
-    '$route'() {
-      this.updatePageTitle()
-    }
+    $route() {
+      this.updatePageTitle();
+    },
+  },
+  computed: {
+    userName() {
+      return this.auth?.user?.name || "Usuário";
+    },
+    userEmail() {
+      return this.auth?.user?.email || "—";
+    },
+    userAvatar() {
+      return this.auth?.user?.avatar || "~/assets/icons/logo.svg";
+    },
   },
   methods: {
     updatePageTitle() {
-      const currentMenuItem = this.menuItems.find(item => 
-        item.to === this.$route.path
-      )
-      
+      const currentMenuItem = this.menuItems.find(
+        (item) => item.to === this.$route.path
+      );
       if (currentMenuItem) {
-        this.pageTitle = currentMenuItem.title
+        this.pageTitle = currentMenuItem.title;
       } else {
-        this.pageTitle = 'Home'
+        this.pageTitle = "Home";
       }
     },
     logout() {
-      console.log('Fazendo logout...')
-      this.$router.push('/login')
-    }
-  }
-}
+      if (this.auth && typeof this.auth.logout === "function") {
+        this.auth.logout();
+      } else {
+        this.$router.push("/login");
+      }
+    },
+  },
+};
 </script>
 
 <style scoped>
