@@ -15,7 +15,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.v-application {
-  background-color: var(--color-primary, #1976d2);
+.v-main {
+  background-color: var(--color-primary, #1976d2) !important;
 }
 </style>

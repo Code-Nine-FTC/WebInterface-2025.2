@@ -7,7 +7,7 @@ export const useAuthStore = defineStore("auth", () => {
   const loading = ref(false);
 
   const cookie = useCookie("token");
-  const apiBase = useRuntimeConfig().public.apiBase || "";
+  const apiBase = useRuntimeConfig().public.apiBase || "http://localhost:8080";
 
   const isAuthenticated = computed(() => !!(token.value || cookie.value));
 

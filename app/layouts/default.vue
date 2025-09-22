@@ -37,7 +37,7 @@
 
       <v-toolbar-title>{{ pageTitle }}</v-toolbar-title>
 
-      <v-img :width="50" :max-height="50" src="../assets/icons/logo.svg" />
+      <v-img :width="50" :max-height="50" src="~/assets/icons/logo.svg" />
 
       <v-spacer></v-spacer>
 
@@ -155,3 +155,5 @@ export default {
   }
 }
 </style>
+
+

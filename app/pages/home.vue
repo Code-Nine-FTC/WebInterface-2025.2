@@ -1,7 +1,7 @@
 <template>
   <div>
     <h1 class="text-h4 mb-4">Bem-vindo à sua Home Page!</h1>
-    
+
     <v-card>
       <v-card-title>Conteúdo da Home</v-card-title>
       <v-card-text>
@@ -11,12 +11,15 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'HomePage',
-  layout: 'default'
-}
+<script setup>
+definePageMeta({ layout: "default" });
 </script>
 
-<style scoped>
-</style>
+<script>
+export default {
+  name: "home",
+  layout: "default",
+};
+</script>
+
+<style scoped></style>

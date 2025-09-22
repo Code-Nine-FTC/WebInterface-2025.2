@@ -30,12 +30,15 @@
   </div>
 </template>
 
+<script setup>
+definePageMeta({ layout: "auth", auth: false });
+</script>
+
 <script>
 import { useAuthStore } from "~/stores/auth";
 
 export default {
   name: "LoginPage",
-  layout: "auth",
   data() {
     return {
       password: "",
@@ -106,10 +109,9 @@ export default {
   align-items: center;
   justify-content: center;
   height: 100vh;
-  background-color: var(--color-primary) !important;
 }
 .bg-form {
-  background-color: var(--color-primary);
+  background-color: var(--color-primary) !important;
   padding: 20px;
 }
 </style>
