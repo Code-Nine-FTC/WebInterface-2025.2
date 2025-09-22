@@ -5,6 +5,8 @@ export const useAuthStore = defineStore("auth", () => {
   const user = ref<any | null>(null);
   const token = ref<string | null>(null);
   const loading = ref(false);
+  const email = ref<string | null>(null);
+  const role = ref<string | null>(null);
 
   const cookie = useCookie("token");
   const apiBase = useRuntimeConfig().public.apiBase || "http://localhost:8080";
@@ -15,6 +17,19 @@ export const useAuthStore = defineStore("auth", () => {
     token.value = cookie.value || null;
   }
 
+  async function initializeAuth() {
+    if (cookie.value && !user.value) {
+      console.log("Initializing auth from cookie");
+      token.value = cookie.value;
+      try {
+        await fetchUser();
+      } catch (e) {
+        console.error("Failed to initialize user from token:", e);
+        logout();
+      }
+    }
+  }
+
   async function login(payload: Record<string, any>) {
     loading.value = true;
     try {
@@ -23,9 +38,18 @@ export const useAuthStore = defineStore("auth", () => {
         method: "POST",
         body: payload,
       });
+
       token.value = res.token;
-      user.value = res.user ?? null;
       cookie.value = res.token;
+
+      user.value = {
+        name: res.name,
+        email: res.email,
+        role: res.role,
+        sectionIds: res.sectionIds,
+      };
+
+      console.log("Login successful:", user.value);
       return res;
     } finally {
       loading.value = false;
@@ -52,6 +76,8 @@ export const useAuthStore = defineStore("auth", () => {
   function logout() {
     user.value = null;
     token.value = null;
+    email.value = null;
+    role.value = null;
     cookie.value = null;
     return navigateTo("/login");
   }
@@ -60,8 +86,11 @@ export const useAuthStore = defineStore("auth", () => {
     user,
     token,
     loading,
+    email,
+    role,
     isAuthenticated,
     setTokenFromCookie,
+    initializeAuth,
     login,
     fetchUser,
     logout,

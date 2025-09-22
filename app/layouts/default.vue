@@ -8,7 +8,7 @@
     >
       <v-list-item
         class="mt-4"
-        :prepend-avatar="userAvatar"
+        prepend-avatar="../assets/icons/logo.svg"
         :title="userName"
         :subtitle="userEmail"
         nav
@@ -37,7 +37,7 @@
 
       <v-toolbar-title>{{ pageTitle }}</v-toolbar-title>
 
-      <v-img :width="50" :max-height="50" src="~/assets/icons/logo.svg" />
+      <v-img :width="50" :max-height="50" src="../assets/icons/logo.svg" />
 
       <v-spacer></v-spacer>
 
@@ -103,7 +103,8 @@ export default {
     this.auth = useAuthStore();
     this.pageTitle = this.pageTitle;
   },
-  mounted() {
+  async mounted() {
+    await this.auth.initializeAuth();
     this.updatePageTitle();
   },
   watch: {
@@ -119,7 +120,7 @@ export default {
       return this.auth?.user?.email || "—";
     },
     userAvatar() {
-      return this.auth?.user?.avatar || "~/assets/icons/logo.svg";
+      return this.auth?.user?.avatar;
     },
   },
   methods: {
@@ -155,5 +156,3 @@ export default {
   }
 }
 </style>
-
-
