@@ -83,16 +83,16 @@ export default {
       menuItems: [
         { title: "Home", icon: "mdi-home", to: "/home", value: "home" },
         {
-          title: "Registrar Perfil",
-          icon: "mdi-account-plus",
-          to: "/profile-register",
-          value: "profile-register",
-        },
-        {
           title: "Stock",
           icon: "mdi-warehouse",
           to: "/storage",
           value: "storage",
+        },
+        {
+          title: "Usuários",
+          icon: "mdi-account-multiple",
+          to: "/users",
+          value: "users",
         },
         {
           title: "Fornecedores",
@@ -106,12 +106,6 @@ export default {
           to: "/sections",
           value: "sections",
         },
-        {
-          title: "Usuários",
-          icon: "mdi-account-multiple",
-          to: "/users",
-          value: "users",
-        }
       ],
       auth: null,
     };
@@ -142,7 +136,6 @@ export default {
   },
   methods: {
     updatePageTitle() {
-      // Ta pegando a rota do ultimo path
       const currentMenuItem = this.menuItems.find(
         (item) => item.to === this.$route.path
       );
