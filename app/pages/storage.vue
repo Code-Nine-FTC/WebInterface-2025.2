@@ -12,7 +12,7 @@
         </div>
       </div>
 
-      <div class="w-full mt-2 sm:w-80">
+      <div class="d-flex flex-row items-center gap-2 mt-2">
         <v-text-field
           v-model="search"
           clearable
@@ -21,8 +21,14 @@
           label="Pesquisar"
           placeholder="Buscar por nome, QR, fornecedor, seção, tipo..."
           append-inner-icon="mdi-magnify"
+          class="flex-1"
         />
-        <v-btn icon="mdi-plus" density="comfortable"> </v-btn>
+        <v-btn
+          icon="mdi-plus"
+          density="comfortable"
+          color="primary"
+          class="flex-shrink-0 ml-2"
+        />
       </div>
     </v-card>
 
@@ -93,7 +99,7 @@ export default {
         { title: "Validade", key: "expireDate" },
         { title: "Fornecedor", key: "supplierName" },
         { title: "Seção", key: "sectionName" },
-        { title: "Mínimo", key: "minimumStock" },
+        { title: "Stock Mínimo", key: "minimumStock" },
         { title: "Última atualização", key: "lastUpdate" },
         { title: "QR", key: "qrCode" },
       ],
