@@ -34,11 +34,37 @@
     </v-card>
 
     <v-card class="bg-white rounded-lg shadow-md pa-4 mb-6">
-      <div class="pa-4 border-b">
-        <div class="flex items-center justify-between">
-          <div class="text-xs text-slate-500">
-            Última atualização:
-            <v-chip color="green">{{ formatDate(Date.now()) }}</v-chip>
+      <div class="px-4 py-3 border-b border-slate-100">
+        <div class="d-flex items-center gap-2 text-xs text-slate-500">
+          <v-icon
+            icon="mdi-warehouse"
+            class="mr-1"
+          />
+          <span>
+            Estoque
+          </span>
+
+          <div class="ml-auto flex items-center gap-2">
+            <span class="hidden sm:inline text-slate-500">
+              Última atualização:
+            </span>
+            <v-chip
+              color="green"
+              size="x-small"
+              variant="tonal"
+              class="font-medium"
+            >
+              {{ formatDate(Date.now()) }}
+            </v-chip>
+            <v-btn
+              size="x-small"
+              variant="text"
+              color="primary"
+              :loading="loading"
+              @click="fetchData"
+            >
+              Atualizar
+            </v-btn>
           </div>
         </div>
       </div>
