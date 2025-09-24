@@ -21,7 +21,6 @@ export default defineNuxtRouteMiddleware(async (to) => {
     }
   }
 
-  // Verifica se está autenticado
   if (!auth.isAuthenticated) {
     return navigateTo("/login");
   }

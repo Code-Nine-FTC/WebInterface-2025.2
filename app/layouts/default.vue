@@ -94,6 +94,24 @@ export default {
           to: "/storage",
           value: "storage",
         },
+        {
+          title: "Fornecedores",
+          icon: "mdi-truck",
+          to: "/suppliers",
+          value: "suppliers",
+        },
+        {
+          title: "Seções",
+          icon: "mdi-view-sequential",
+          to: "/sections",
+          value: "sections",
+        },
+        {
+          title: "Usuários",
+          icon: "mdi-account-multiple",
+          to: "/users",
+          value: "users",
+        }
       ],
       auth: null,
     };
