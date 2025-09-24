@@ -96,7 +96,6 @@ export default {
         },
       ],
       auth: null,
-      ui: null,
     };
   },
   created() {
@@ -125,6 +124,7 @@ export default {
   },
   methods: {
     updatePageTitle() {
+      // Ta pegando a rota do ultimo path
       const currentMenuItem = this.menuItems.find(
         (item) => item.to === this.$route.path
       );
