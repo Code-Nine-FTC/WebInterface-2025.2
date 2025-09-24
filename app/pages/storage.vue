@@ -1,31 +1,72 @@
 <template>
-  <div>
-    <h1 v-if="userRole === 'ADMIN'">Stock</h1>
-    <h1 v-else>Stock - {{ userSectionTitle }}</h1>
-    <v-text-field
-      v-model="search"
-      clearable
-      variant="outlined"
-      label="Pesquisar"
-      placeholder="Buscar por nome, QR, fornecedor, seção, tipo..."
-      append-inner-icon="mdi-magnify"
-    />
+  <div class="max-w-6xl mx-auto p-6">
+    <v-card class="bg-white rounded-lg shadow-md pa-4 mb-6">
+      <div>
+        <div class="d-flex flex-row items-center gap-3">
+          <v-chip v-if="userRole === 'ADMIN'" variant="elevated" color="purple">
+            Stock Geral
+          </v-chip>
+          <v-chip v-else variant="elevated" color="primary">
+            {{ userSectionTitle }}
+          </v-chip>
+        </div>
+      </div>
 
-    <v-data-table
-      :headers="headers"
-      :items="filteredData"
-      item-key="itemId"
-      :loading="loading"
-      class="elevation-1"
-    >
-      <template v-slot:item.expireDate="{ item }">
-        {{ formatDate(item.expireDate) }}
-      </template>
+      <div class="w-full mt-2 sm:w-80">
+        <v-text-field
+          v-model="search"
+          clearable
+          density="compact"
+          variant="outlined"
+          label="Pesquisar"
+          placeholder="Buscar por nome, QR, fornecedor, seção, tipo..."
+          append-inner-icon="mdi-magnify"
+        />
+        <v-btn icon="mdi-plus" density="comfortable"> </v-btn>
+      </div>
+    </v-card>
 
-      <template v-slot:item.lastUpdate="{ item }">
-        {{ formatDate(item.lastUpdate) }}
-      </template>
-    </v-data-table>
+    <v-card class="bg-white rounded-lg shadow-md pa-4 mb-6">
+      <div class="pa-4 border-b">
+        <div class="flex items-center justify-between">
+          <div class="text-xs text-slate-500">
+            Última atualização:
+            <v-chip color="green">{{ formatDate(Date.now()) }}</v-chip>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-4">
+        <div class="overflow-auto">
+          <v-data-table
+            :headers="headers"
+            :items="filteredData"
+            item-key="itemId"
+            :loading="loading"
+            class="min-w-[900px]"
+          >
+            <template v-slot:item.expireDate="{ item }">
+              <span class="text-sm text-slate-700">{{
+                formatDate(item.expireDate)
+              }}</span>
+            </template>
+
+            <template v-slot:item.lastUpdate="{ item }">
+              <span class="text-sm text-slate-700">{{
+                formatDate(item.lastUpdate)
+              }}</span>
+            </template>
+          </v-data-table>
+
+          <div
+            v-if="!loading && filteredData.length === 0"
+            class="text-center py-8 text-slate-500"
+          >
+            Nenhum item encontrado.
+          </div>
+        </div>
+      </div>
+    </v-card>
   </div>
 </template>
 
