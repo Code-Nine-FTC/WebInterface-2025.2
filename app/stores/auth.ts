@@ -8,7 +8,11 @@ export const useAuthStore = defineStore("auth", () => {
   const email = ref<string | null>(null);
   const role = ref<string | null>(null);
 
-  const cookie = useCookie("token");
+  const cookie = useCookie("token", {
+    path: "/",
+    maxAge: 60 * 60 * 12,
+    sameSite: "lax",
+  });
   const apiBase = useRuntimeConfig().public.apiBase || "http://localhost:8080";
 
   const isAuthenticated = computed(() => !!(token.value || cookie.value));
@@ -18,9 +22,9 @@ export const useAuthStore = defineStore("auth", () => {
   }
 
   async function initializeAuth() {
-    if (cookie.value && !user.value) {
-      console.log("Initializing auth from cookie");
-      token.value = cookie.value;
+    if ((cookie.value || token.value) && !user.value) {
+      console.log("Initializing auth from cookie/token");
+      token.value = token.value ?? cookie.value ?? null;
       try {
         await fetchUser();
       } catch (e) {
@@ -46,10 +50,9 @@ export const useAuthStore = defineStore("auth", () => {
         name: res.name,
         email: res.email,
         role: res.role,
-        sectionIds: res.sectionIds,
+        sections: res.sections,
       };
 
-      console.log("Login successful:", user.value);
       return res;
     } finally {
       loading.value = false;
