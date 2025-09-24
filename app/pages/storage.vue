@@ -63,13 +63,6 @@
               }}</span>
             </template>
           </v-data-table>
-
-          <div
-            v-if="!loading && filteredData.length === 0"
-            class="text-center py-8 text-slate-500"
-          >
-            Nenhum item encontrado.
-          </div>
         </div>
       </div>
     </v-card>
