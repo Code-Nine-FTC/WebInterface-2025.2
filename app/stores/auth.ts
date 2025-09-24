@@ -37,22 +37,16 @@ export const useAuthStore = defineStore("auth", () => {
   async function login(payload: Record<string, any>) {
     loading.value = true;
     try {
-      const res: any = await $fetch("/login", {
-        baseURL: apiBase,
-        method: "POST",
-        body: payload,
-      });
-
+      const { $api } = useNuxtApp();
+      const res: any = await $api("/login", { method: "POST", body: payload });
       token.value = res.token;
       cookie.value = res.token;
-
       user.value = {
         name: res.name,
         email: res.email,
         role: res.role,
         sections: res.sections,
       };
-
       return res;
     } finally {
       loading.value = false;

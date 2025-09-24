@@ -22,7 +22,6 @@
 </template>
 
 <script setup lang="ts">
-
 import { useSidebarStore } from '~/stores/sidebar'
 const sidebar = useSidebarStore()
 </script>

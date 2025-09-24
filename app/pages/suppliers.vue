@@ -3,9 +3,7 @@
     <v-card class="bg-white rounded-lg shadow-md pa-4 mb-6">
       <div>
         <div class="d-flex flex-row items-center gap-3">
-          <v-chip variant="elevated" color="red">
-            Fornecedores
-          </v-chip>
+          <v-chip variant="elevated" color="red"> Fornecedores </v-chip>
         </div>
       </div>
 
@@ -55,11 +53,52 @@
               }}</span>
             </template>
 
+            <template v-slot:item.cnpj="{ item }">
+              <span class="text-sm text-slate-700">{{
+                formatCNPJ(item.cnpj)
+              }}</span>
+            </template>
+            <template v-slot:item.phoneNumber="{ item }">
+              <span class="text-sm text-slate-700">{{
+                formatTelefone(item.phoneNumber)
+              }}</span>
+            </template>
+
+            <template v-slot:item.actions="{ item }">
+              <div class="d-flex flex-row gap-1">
+                <v-tooltip text="Editar" location="top">
+                  <template #activator="{ props }">
+                    <v-btn
+                      v-bind="props"
+                      size="small"
+                      icon="mdi-pencil"
+                      variant="text"
+                      color="primary"
+                      @click="editSupplier(item)"
+                    />
+                  </template>
+                </v-tooltip>
+
+                <v-tooltip text="Remover" location="top">
+                  <template #activator="{ props }">
+                    <v-btn
+                      v-bind="props"
+                      size="small"
+                      icon="mdi-delete"
+                      variant="text"
+                      color="red"
+                      @click="removeSupplier(item)"
+                    />
+                  </template>
+                </v-tooltip>
+              </div>
+            </template>
           </v-data-table>
         </div>
       </div>
     </v-card>
-    <FormSidebar />
+
+    <FormSidebar @created="handleSupplierCreated" @updated="handleSupplierUpdated" />
   </div>
 </template>
 
@@ -72,9 +111,10 @@ import { useAuthStore } from "~/stores/auth";
 import { useSupplier } from "~/stores/supplier";
 import { useSidebarStore } from "~/stores/sidebar";
 import FormSidebar from "~/components/sidebars/suppliers.vue";
+import { formatCNPJ, formatTelefone, formatDate } from "~/utils/index";
 
 export default {
-  name: "Storage",
+  name: "Suppliers",
   layout: "default",
   data() {
     return {
@@ -88,8 +128,10 @@ export default {
         { title: "Telefone", key: "phoneNumber" },
         { title: "CNPJ", key: "cnpj" },
         { title: "Última Atualização", key: "lastUpdate" },
+        { title: "Ações", key: "actions", sortable: false },
       ],
       sidebar: null,
+      supplier: null,
     };
   },
   created() {
@@ -101,46 +143,22 @@ export default {
     if (this.auth && typeof this.auth.initializeAuth === "function") {
       try {
         await this.auth.initializeAuth();
-      } catch (e) {
-        console.warn("initializeAuth falhou:", e);
-      }
+      } catch {}
     }
     await this.fetchData();
   },
   computed: {
     filteredData() {
-      const q = (this.search || "").toString().toLowerCase().trim();
+      const q = (this.search || "").toLowerCase().trim();
       if (!q) return this.data;
-      return this.data.filter((item) => {
-        return [
-          "name",
-          "qrCode",
-          "supplierName",
-          "sectionName",
-          "itemTypeName",
-          "lastUserName",
-          "itemId",
-        ].some((key) => {
-          const v = item?.[key];
-          return (
-            v !== undefined &&
-            v !== null &&
-            v.toString().toLowerCase().includes(q)
-          );
-        });
-      });
-    },
-    userName() {
-      return this.auth?.user?.name || "Usuário";
-    },
-    userEmail() {
-      return this.auth?.user?.email || "—";
-    },
-    userSections() {
-      return this.auth?.user?.sections || [];
-    },
-    userRole() {
-      return this.auth?.user?.role || "DEFAULT";
+      return this.data.filter((item) =>
+        ["nomeFantasia", "razaoSocial", "email", "telefone", "cnpj"].some(
+          (k) => {
+            const v = item?.[k];
+            return v && v.toString().toLowerCase().includes(q);
+          }
+        )
+      );
     },
   },
   methods: {
@@ -148,28 +166,35 @@ export default {
       this.loading = true;
       try {
         this.data = await this.supplier.list();
-        this.loading = false;
       } catch (e) {
-        console.error("Error fetching data:", e);
-      }
-    },
-    formatDate(value) {
-      if (!value) return "—";
-      try {
-        const d = new Date(value);
-        return d.toLocaleString("pt-BR", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        });
-      } catch {
-        return value;
+        console.error("Error fetching suppliers:", e);
+      } finally {
+        this.loading = false;
       }
     },
     openSidebar() {
       this.sidebar?.open({ mode: "create" });
+    },
+    handleSupplierCreated() {
+      this.fetchData();
+    },
+    editSupplier(item) {
+      this.sidebar?.open({ mode: "edit", supplier: item });
+    },
+    handleSupplierUpdated() {
+      this.fetchData();
+    },
+    async removeSupplier(item) {
+      if (!item?.id) return;
+      const ok = confirm("Tem certeza que deseja remover este fornecedor?");
+      if (!ok) return;
+      try {
+        await this.supplier.remove({ id: item.id });
+        this.data = this.data.filter((s) => s.id !== item.id);
+      } catch (e) {
+        console.error("Erro ao remover fornecedor:", e);
+        this.fetchData();
+      }
     },
   },
 };
