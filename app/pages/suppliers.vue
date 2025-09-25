@@ -131,7 +131,6 @@ definePageMeta({ layout: "default", middleware: "auth" });
 </script>
 
 <script>
-import { useAuthStore } from "~/stores/auth";
 import { useSupplier } from "~/stores/supplier";
 import { useSidebarStore } from "~/stores/sidebar";
 import FormSidebar from "~/components/sidebars/suppliers.vue";
@@ -160,16 +159,10 @@ export default {
     };
   },
   created() {
-    this.auth = useAuthStore();
     this.supplier = useSupplier();
     this.sidebar = useSidebarStore();
   },
   async mounted() {
-    if (this.auth && typeof this.auth.initializeAuth === "function") {
-      try {
-        await this.auth.initializeAuth();
-      } catch {}
-    }
     await this.fetchData();
   },
   computed: {

@@ -12,7 +12,7 @@
             <span>{{ userName }}</span>
             <v-chip
               v-if="userRole"
-              :color="roleColor"
+              :color="roleColor(userRole)"
               size="x-small"
               label
               class="text-white font-small ml-2"
@@ -152,19 +152,6 @@ export default {
     userRole() {
       return this.auth?.user?.role || null;
     },
-    roleColor() {
-      switch (this.userRole) {
-        case "ADMIN":
-          return "pink";
-        case "MANAGER":
-          return "blue";
-        case "ASSISTANT":
-          return "green";
-        default:
-          return "grey";
-      }
-    },
-
     filteredMenuItems() {
       const role = this.auth?.user?.role;
       return this.menuItems.filter((m) => {
@@ -189,18 +176,6 @@ export default {
         this.auth.logout();
       } else {
         this.$router.push("/login");
-      }
-    },
-    roleName(value) {
-      switch (value) {
-        case "ADMIN":
-          return "ADMIN";
-        case "MANAGER":
-          return "Gerente";
-        case "ASSISTANT":
-          return "Assistente";
-        default:
-          return null;
       }
     },
   },
