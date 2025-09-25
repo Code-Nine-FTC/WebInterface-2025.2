@@ -53,9 +53,6 @@
               class="mr-2"
               density="comfortable"
               color="primary"
-              @click="
-                sidebar?.open({ mode: 'view', itemId: user.id, item: user })
-              "
               >Ver</v-btn
             >
             <v-btn
@@ -63,6 +60,7 @@
               color="green"
               prepend-icon="mdi-pencil"
               variant="tonal"
+              @click="editUser(user)"
               >Editar</v-btn
             >
             <v-btn
@@ -134,6 +132,16 @@ export default {
     },
     openSidebar() {
       this.sidebar?.open({ mode: "create" });
+    },
+    handleUserCreated() {
+      this.fetchData();
+    },
+    editUser(item) {
+      console.log("Editing user:", item);
+      this.sidebar?.open({ mode: "edit", user: item });
+    },
+    handleUserUpdated() {
+      this.fetchData();
     },
   },
 };
