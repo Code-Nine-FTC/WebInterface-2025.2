@@ -12,38 +12,75 @@
         class="flex-1"
       />
       <v-btn
-        icon="mdi-plus"
+        prepend-icon="mdi-plus"
         density="comfortable"
         color="primary"
         class="flex-shrink-0 ml-2"
+        height="38"
         @click="openSidebar"
-      />
+        >Cadastrar</v-btn
+      >
     </div>
   </v-card>
   <v-item-group>
     <v-row>
-      <v-col v-for="user in data" :key="user.id" cols="12" md="4">
-        <v-card class="mx-auto" max-width="500" outlined>
-          <v-list-item three-line>
-            <v-list-item-avatar size="80" tile color="grey lighten-4">
-              <v-icon icon="mdi-account" size="48" color="grey" />
-              <span>{{ user.username }}</span>
-              <v-chip
-                size="small"
-                label
-                :color="roleColor(user.role)"
-                class="text-white font-medium ml-2"
-                >{{ roleName(user.role) }}</v-chip
-              >
-              <span class="text-subtitle">{{ user.email }}</span>
-            </v-list-item-avatar>
+      <v-col v-for="user in filteredUsers" :key="user.id" cols="12" md="4">
+        <v-card class="mx-auto" max-width="550" outlined>
+          <v-list-item class="pa-4">
+            <v-row class="d-flex align-center" no-gutters>
+              <v-col class="d-flex justify-center" cols="3">
+                <v-avatar size="48" color="primary" class="text-white">
+                  {{ getInitials(user.username) }}
+                </v-avatar>
+              </v-col>
+              <v-col cols="9">
+                <span>{{ user.username }}</span>
+                <v-chip
+                  size="small"
+                  label
+                  :color="roleColor(user.role)"
+                  class="text-white font-medium ml-2"
+                  >{{ roleName(user.role) }}</v-chip
+                >
+                <span class="text-subtitle text-grey">{{ user.email }}</span>
+              </v-col>
+            </v-row>
           </v-list-item>
+          <v-row class="d-flex justify-end pa-2" no-gutters>
+            <v-btn
+              prepend-icon="mdi-eye"
+              variant="tonal"
+              class="mr-2"
+              density="comfortable"
+              color="primary"
+              @click="
+                sidebar?.open({ mode: 'view', itemId: user.id, item: user })
+              "
+              >Ver</v-btn
+            >
+            <v-btn
+              density="comfortable"
+              color="green"
+              prepend-icon="mdi-pencil"
+              variant="tonal"
+              >Editar</v-btn
+            >
+            <v-btn
+              density="comfortable"
+              color="red"
+              prepend-icon="mdi-delete"
+              variant="tonal"
+              class="ml-2"
+              >Excluir</v-btn
+            >
+          </v-row>
         </v-card>
       </v-col>
     </v-row>
   </v-item-group>
   <FormSidebar />
 </template>
+
 <script setup>
 definePageMeta({ layout: "default", middleware: "auth" });
 </script>
@@ -60,6 +97,25 @@ export default {
       list_users: [],
       search: "",
     };
+  },
+  computed: {
+    filteredUsers() {
+      const roleOrder = { ADMIN: 0, MANAGER: 1, ASSISTANT: 2 };
+      const q = (this.search || "").toLowerCase().trim();
+      let users = this.data;
+      if (q) {
+        users = users.filter((u) =>
+          [u.username, u.email, u.name]
+            .filter(Boolean)
+            .some((v) => v.toLowerCase().includes(q))
+        );
+      }
+      return users.slice().sort((a, b) => {
+        const ra = roleOrder[a.role] ?? 99;
+        const rb = roleOrder[b.role] ?? 99;
+        return ra - rb;
+      });
+    },
   },
   created() {
     this.list_users = useUsers();
