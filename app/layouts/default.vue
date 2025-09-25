@@ -7,7 +7,12 @@
       @click="rail = false"
     >
       <div class="d-flex flex-column h-100">
-        <v-list-item class="mt-4" prepend-avatar="../assets/icons/logo.svg" nav>
+        <v-list-item class="mt-4" nav>
+          <template #prepend>
+            <v-avatar size="48" color="primary" class="text-white font-bold">
+              {{ getInitials(userName) }}
+            </v-avatar>
+          </template>
           <div class="flex items-center gap-2">
             <span>{{ userName }}</span>
             <v-chip

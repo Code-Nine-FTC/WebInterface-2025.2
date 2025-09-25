@@ -47,14 +47,14 @@
             </v-row>
           </v-list-item>
           <v-row class="d-flex justify-end pa-2" no-gutters>
-            <v-btn
+            <!-- <v-btn
               prepend-icon="mdi-eye"
               variant="tonal"
               class="mr-2"
               density="comfortable"
               color="primary"
               >Ver</v-btn
-            >
+            > -->
             <v-btn
               density="comfortable"
               color="green"
