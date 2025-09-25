@@ -22,3 +22,8 @@ logs
 .env
 .env.*
 !.env.example
+
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+node_modules/.package-lock.json

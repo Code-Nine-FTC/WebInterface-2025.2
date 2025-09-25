@@ -127,7 +127,7 @@
 </template>
 
 <script setup>
-definePageMeta({ layout: "default" });
+definePageMeta({ layout: "default", middleware: "auth" });
 </script>
 
 <script>
