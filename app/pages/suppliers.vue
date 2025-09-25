@@ -19,21 +19,43 @@
           class="flex-1"
         />
         <v-btn
-          icon="mdi-plus"
+          prepend-icon="mdi-plus"
           density="comfortable"
           color="primary"
           class="flex-shrink-0 ml-2"
+          height="38"
           @click="openSidebar"
-        />
+        >Cadastrar</v-btn>
       </div>
     </v-card>
 
     <v-card class="bg-white rounded-lg shadow-md pa-4 mb-6">
-      <div class="pa-4 border-b">
-        <div class="flex items-center justify-between">
-          <div class="text-xs text-slate-500">
-            Última atualização:
-            <v-chip color="green">{{ formatDate(Date.now()) }}</v-chip>
+      <div class="px-4 py-3 border-b border-slate-100">
+        <div class="d-flex items-center gap-2 text-xs text-slate-500">
+          <v-icon icon="mdi-account-multiple" class="mr-1" />
+          <span> Fornecedores </span>
+
+          <div class="ml-auto flex items-center gap-2">
+            <span class="hidden sm:inline text-slate-500">
+              Última atualização:
+            </span>
+            <v-chip
+              color="green"
+              size="x-small"
+              variant="tonal"
+              class="font-medium"
+            >
+              {{ formatDate(lastUpdated) }}
+            </v-chip>
+            <v-btn
+              size="x-small"
+              variant="text"
+              color="primary"
+              :loading="loading"
+              @click="fetchData"
+            >
+              Atualizar
+            </v-btn>
           </div>
         </div>
       </div>
@@ -98,16 +120,18 @@
       </div>
     </v-card>
 
-    <FormSidebar @created="handleSupplierCreated" @updated="handleSupplierUpdated" />
+    <FormSidebar
+      @created="handleSupplierCreated"
+      @updated="handleSupplierUpdated"
+    />
   </div>
 </template>
 
 <script setup>
-definePageMeta({ layout: "default" });
+definePageMeta({ layout: "default", middleware: "auth" });
 </script>
 
 <script>
-import { useAuthStore } from "~/stores/auth";
 import { useSupplier } from "~/stores/supplier";
 import { useSidebarStore } from "~/stores/sidebar";
 import FormSidebar from "~/components/sidebars/suppliers.vue";
@@ -122,6 +146,7 @@ export default {
       auth: null,
       loading: false,
       search: "",
+      lastUpdated: Date.now(),
       headers: [
         { title: "Nome", key: "name" },
         { title: "E-Mail", key: "email" },
@@ -135,16 +160,10 @@ export default {
     };
   },
   created() {
-    this.auth = useAuthStore();
     this.supplier = useSupplier();
     this.sidebar = useSidebarStore();
   },
   async mounted() {
-    if (this.auth && typeof this.auth.initializeAuth === "function") {
-      try {
-        await this.auth.initializeAuth();
-      } catch {}
-    }
     await this.fetchData();
   },
   computed: {
@@ -166,6 +185,7 @@ export default {
       this.loading = true;
       try {
         this.data = await this.supplier.list();
+        this.lastUpdated = Date.now();
       } catch (e) {
         console.error("Error fetching suppliers:", e);
       } finally {

@@ -6,54 +6,75 @@
       permanent
       @click="rail = false"
     >
-      <v-list-item
-        class="mt-4"
-        prepend-avatar="../assets/icons/logo.svg"
-        :title="userName"
-        :subtitle="userEmail"
-        nav
-      >
-      </v-list-item>
+      <div class="d-flex flex-column h-100">
+        <v-list-item class="mt-4" nav>
+          <template #prepend>
+            <v-avatar size="48" color="primary" class="text-white font-bold">
+              {{ getInitials(userName) }}
+            </v-avatar>
+          </template>
+          <div class="flex items-center gap-2">
+            <span>{{ userName }}</span>
+            <v-chip
+              v-if="userRole"
+              :color="roleColor(userRole)"
+              size="x-small"
+              label
+              class="text-white font-small ml-2"
+            >
+              {{ roleName(userRole) }}
+            </v-chip>
+          </div>
+          <template #subtitle>
+            {{ userEmail }}
+          </template>
+        </v-list-item>
+        <v-divider />
 
-      <v-divider></v-divider>
+        <v-list density="compact" nav>
+          <v-list-item
+            v-for="item in filteredMenuItems"
+            :key="item.title"
+            :prepend-icon="item.icon"
+            :title="item.title"
+            :to="item.to"
+            :value="item.value"
+          />
+        </v-list>
 
-      <v-list density="compact" nav>
-        <v-list-item
-          v-for="item in menuItems"
-          :key="item.title"
-          :prepend-icon="item.icon"
-          :title="item.title"
-          :to="item.to"
-          :value="item.value"
-        ></v-list-item>
-      </v-list>
+        <v-spacer />
+
+        <v-divider class="mt-2" />
+        <div class="pa-3">
+          <v-btn
+            block
+            color="red"
+            variant="tonal"
+            prepend-icon="mdi-logout"
+            @click="logout"
+          >
+            Sair
+          </v-btn>
+        </div>
+      </div>
     </v-navigation-drawer>
 
     <v-app-bar color="primary">
-      <v-app-bar-nav-icon
-        variant="text"
-        @click.stop="drawer = !drawer"
-      ></v-app-bar-nav-icon>
-
+      <v-app-bar-nav-icon variant="text" @click.stop="drawer = !drawer" />
       <v-toolbar-title>{{ pageTitle }}</v-toolbar-title>
-
       <v-img :width="50" :max-height="50" src="../assets/icons/logo.svg" />
-
-      <v-spacer></v-spacer>
-
+      <v-spacer />
       <v-btn icon>
         <v-icon>mdi-bell</v-icon>
       </v-btn>
-
       <v-menu>
-        <template v-slot:activator="{ props }">
+        <template #activator="{ props }">
           <v-btn color="white" v-bind="props" icon>
             <v-avatar size="32">
-              <v-icon icon="mdi-account-circle"></v-icon>
+              <v-icon icon="mdi-account-circle" />
             </v-avatar>
           </v-btn>
         </template>
-
         <v-list>
           <v-list-item @click="logout">
             <v-list-item-title>Sair</v-list-item-title>
@@ -132,6 +153,17 @@ export default {
     },
     userAvatar() {
       return this.auth?.user?.avatar;
+    },
+    userRole() {
+      return this.auth?.user?.role || null;
+    },
+    filteredMenuItems() {
+      const role = this.auth?.user?.role;
+      return this.menuItems.filter((m) => {
+        if (m.value === "sections" && m.value === "users")
+          return role === "ADMIN";
+        return true;
+      });
     },
   },
   methods: {

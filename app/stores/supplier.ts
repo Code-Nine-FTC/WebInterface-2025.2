@@ -31,18 +31,18 @@ export const useSupplier = defineStore("supplier", () => {
     try {
       return await $api(`/suppliers/${payload.id}`, {
         method: "DELETE",
-        body: payload
+        body: payload,
       });
     } catch (e) {
       console.error("Failed to delete supplier:", e);
     }
   }
 
-  async function update(params: Record<string, any>) {
+  async function update(payload: Record<string, any>) {
     try {
-      return await $api(`/suppliers/${params.id}`, {
+      return await $api(`/suppliers/${payload.id}`, {
         method: "PUT",
-        body: params
+        body: payload,
       });
     } catch (e) {
       console.error("Failed to update supplier:", e);
@@ -53,6 +53,6 @@ export const useSupplier = defineStore("supplier", () => {
     list,
     create,
     remove,
-    update
+    update,
   };
 });
