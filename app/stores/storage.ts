@@ -30,8 +30,44 @@ export const useStorage = defineStore("storage", () => {
     }
   }
 
+  async function create(payload: Record<string, any>) {
+    try {
+      return await $api("/items", {
+        method: "POST",
+        body: payload,
+      });
+    } catch (e) {
+      console.error("Failed to create item:", e);
+    }
+  }
+
+  async function remove(payload: Record<string, any>) {
+    try {
+      return await $api(`/items/${payload.id}`, {
+        method: "DELETE",
+        body: payload,
+      });
+    } catch (e) {
+      console.error("Failed to delete item:", e);
+    }
+  }
+
+  async function update(payload: Record<string, any>) {
+    try {
+      return await $api(`/items/${payload.id}`, {
+        method: "PUT",
+        body: payload,
+      });
+    } catch (e) {
+      console.error("Failed to update item:", e);
+    }
+  }
+
   return {
     list,
     items,
+    create,
+    remove,
+    update,
   };
 });
