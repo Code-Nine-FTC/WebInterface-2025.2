@@ -30,7 +30,7 @@
           class="flex-shrink-0 ml-2"
           height="38"
           @click="openSidebar"
-        />
+        >Cadastrar</v-btn>
       </div>
     </v-card>
 

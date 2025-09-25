@@ -155,7 +155,8 @@ export default {
     filteredMenuItems() {
       const role = this.auth?.user?.role;
       return this.menuItems.filter((m) => {
-        if (m.value === "sections") return role === "ADMIN";
+        if (m.value === "sections" && m.value === "users")
+          return role === "ADMIN";
         return true;
       });
     },
