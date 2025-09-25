@@ -197,13 +197,7 @@ export default {
     quickActions() {
       const actions = [];
       const sidebar = useSidebarStore?.();
-      if (this.userRole === "ADMIN") {
-        actions.push({
-          label: "Nova Seção",
-          color: "primary",
-          run: () => this.$router.push("/sections"),
-        });
-      }
+
       if (["ADMIN", "MANAGER"].includes(this.userRole)) {
         actions.push(
           {
@@ -222,6 +216,13 @@ export default {
             run: () => this.$router.push("/users"),
           }
         );
+        if (this.userRole === "ADMIN") {
+          actions.push({
+            label: "Nova Seção",
+            color: "primary",
+            run: () => this.$router.push("/sections"),
+          });
+        }
       }
       return actions;
     },

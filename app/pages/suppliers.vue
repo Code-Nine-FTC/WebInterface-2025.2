@@ -31,13 +31,8 @@
     <v-card class="bg-white rounded-lg shadow-md pa-4 mb-6">
       <div class="px-4 py-3 border-b border-slate-100">
         <div class="d-flex items-center gap-2 text-xs text-slate-500">
-          <v-icon
-            icon="mdi-account-multiple"
-            class="mr-1"
-          />
-          <span>
-            Fornecedores
-          </span>
+          <v-icon icon="mdi-account-multiple" class="mr-1" />
+          <span> Fornecedores </span>
 
           <div class="ml-auto flex items-center gap-2">
             <span class="hidden sm:inline text-slate-500">

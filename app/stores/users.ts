@@ -1,68 +1,67 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 
-export const useTypeItem = defineStore("typeItem", () => {
-  const typeItems = ref<Array<any>>([]);
+export const useUsers = defineStore("users", () => {
+  const users = ref<Array<any>>([]);
   const { $api } = useNuxtApp();
 
   async function list() {
     try {
-      const res: any = await $api("/type-items");
-      if (Array.isArray(res)) typeItems.value = res;
-      else if (res?.typeItems) typeItems.value = res.typeItems;
-      else if (res?.data) typeItems.value = res.data;
-      else typeItems.value = [];
-      return typeItems.value;
+      const res: any = await $api("/users");
+      if (Array.isArray(res)) users.value = res;
+      else if (res?.users) users.value = res.users;
+      else if (res?.data) users.value = res.data;
+      else users.value = [];
+      return users.value;
     } catch (e) {
-      console.error("Failed to list type items:", e);
+      console.error("Failed to list users:", e);
       return [];
     }
   }
 
   async function create(payload: Record<string, any>) {
     try {
-      return await $api("/type-items", {
+      return await $api("/users", {
         method: "POST",
         body: payload,
       });
     } catch (e) {
-      console.error("Failed to create type item:", e);
+      console.error("Failed to create user:", e);
     }
   }
 
   async function update(payload: Record<string, any>) {
     try {
-      return await $api(`/type-items/${payload.id}`, {
+      return await $api(`/users/${payload.id}`, {
         method: "PUT",
         body: payload,
       });
     } catch (e) {
-      console.error("Failed to update type item:", e);
+      console.error("Failed to update user:", e);
     }
   }
 
   async function remove(payload: Record<string, any>) {
     try {
-      return await $api(`/type-items/${payload.id}`, {
+      return await $api(`/users/${payload.id}`, {
         method: "DELETE",
         body: payload,
       });
     } catch (e) {
-      console.error("Failed to delete type item:", e);
+      console.error("Failed to delete user:", e);
     }
   }
 
   async function disable(payload: Record<string, any>) {
     try {
-      return await $api(`/type-items/${payload.id}`, {
+      return await $api(`/users/${payload.id}`, {
         method: "PATCH",
         body: payload,
       });
     } catch (e) {
-      console.error("Failed to disable type item:", e);
+      console.error("Failed to disable user:", e);
     }
   }
-
   return {
     list,
     create,
