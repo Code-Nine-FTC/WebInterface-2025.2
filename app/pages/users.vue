@@ -63,14 +63,21 @@
               @click="editUser(user)"
               >Editar</v-btn
             >
-            <v-btn
-              density="comfortable"
-              color="red"
-              prepend-icon="mdi-delete"
-              variant="tonal"
-              class="ml-2"
-              >Excluir</v-btn
-            >
+            <v-tooltip text="Remover" location="top">
+              <template #activator="{ props }">
+                <v-btn
+                  v-bind="props"
+                  density="comfortable"
+                  color="red"
+                  prepend-icon="mdi-delete"
+                  variant="tonal"
+                  class="ml-2"
+                  @click="confirmDeleteUser(user)"
+                >
+                  Excluir
+                </v-btn>
+              </template>
+            </v-tooltip>
           </v-row>
         </v-card>
       </v-col>
@@ -142,6 +149,23 @@ export default {
     },
     handleUserUpdated() {
       this.fetchData();
+    },
+    async deleteUser(item) {
+      if (!item || !item.id) return;
+      try {
+        console.log("Deleting user:", item);
+        await this.list_users.remove(item.id);
+        this.fetchData();
+      } catch (error) {
+        console.error("Error deleting user:", error);
+        alert("Ocorreu um erro ao excluir o usuário. Tente novamente.");
+      }
+    },
+    confirmDeleteUser(user) {
+      if (!user || !user.id) return;
+      const ok = confirm("Tem certeza que deseja remover este usuário?");
+      if (!ok) return;
+      this.deleteUser(user);
     },
   },
 };
