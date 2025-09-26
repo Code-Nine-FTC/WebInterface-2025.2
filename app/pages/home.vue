@@ -17,12 +17,6 @@
         <div class="kpi-value">
           {{ k.loading ? "…" : k.value }}
         </div>
-        <div
-          v-if="k.helper"
-          class="text-caption text-medium-emphasis mt-1 font-regular"
-        >
-          {{ k.helper }}
-        </div>
       </v-card>
     </div>
 
@@ -51,7 +45,7 @@
     <!-- Itens críticos -->
     <v-card
       v-if="criticalItems.length"
-      class="section-card pa-5 critical-card"
+      class="section-card pa-5 critical-card mb-4"
       elevation="2"
     >
       <div class="d-flex align-center mb-4">
@@ -77,8 +71,8 @@
         <tbody>
           <tr v-for="it in criticalItems" :key="it.id">
             <td>{{ it.name || it.descricao || "#" + it.id }}</td>
-            <td>{{ it.quantity ?? it.qtd ?? "-" }}</td>
-            <td>{{ it.minQuantity ?? it.min ?? "-" }}</td>
+            <td>{{ it.currentStock ?? it.qtd ?? "-" }}</td>
+            <td>{{ it.minimumStock ?? it.min ?? "-" }}</td>
           </tr>
         </tbody>
       </v-table>
@@ -243,8 +237,8 @@ export default {
     criticalItems() {
       return (this.items || [])
         .filter((it) => {
-          const qtd = it.quantity ?? it.qtd;
-          const min = it.minQuantity ?? it.min;
+          const qtd = it.currentStock ?? it.qtd;
+          const min = it.minimumStock ?? it.min;
           return qtd != null && min != null && qtd <= min;
         })
         .slice(0, 8);
@@ -280,7 +274,7 @@ export default {
       const map = {
         items: this.items.length,
         crit,
-        suppliers: this.suppliers.length,
+        suppliers: this.suppliers.length - 1, // Exclui "Usuario de Migração"
         sections: this.auth?.user?.sections?.length || 0,
       };
       this.kpis = this.kpis.map((k) => ({
@@ -328,7 +322,7 @@ export default {
 .quick-action-btn {
   flex: 1 1 180px;
   max-width: 240px;
-  height: 120px;
+  height: 60px;
   justify-content: flex-start;
   font-weight: 600;
   letter-spacing: 0.3px;

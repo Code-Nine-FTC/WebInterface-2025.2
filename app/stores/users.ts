@@ -45,7 +45,6 @@ export const useUsers = defineStore("users", () => {
     try {
       return await $api(`/users/${payload.id}`, {
         method: "DELETE",
-        body: payload,
       });
     } catch (e) {
       console.error("Failed to delete user:", e);
@@ -54,9 +53,8 @@ export const useUsers = defineStore("users", () => {
 
   async function disable(payload: Record<string, any>) {
     try {
-      return await $api(`/users/${payload.id}`, {
+      return await $api(`/users/switch/${payload.id}`, {
         method: "PATCH",
-        body: payload,
       });
     } catch (e) {
       console.error("Failed to disable user:", e);
