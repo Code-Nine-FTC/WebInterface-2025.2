@@ -19,12 +19,13 @@
           class="flex-1"
         />
         <v-btn
-          icon="mdi-plus"
+          prepend-icon="mdi-plus"
           density="comfortable"
           color="primary"
           class="flex-shrink-0 ml-2"
+          height="38"
           @click="openSidebar"
-        />
+        >Cadastrar</v-btn>
       </div>
     </v-card>
 
