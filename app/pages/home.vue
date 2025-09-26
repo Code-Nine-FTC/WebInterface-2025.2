@@ -248,6 +248,7 @@ export default {
     this.auth = useAuthStore();
     this.supplierStore = useSupplier();
     this.storageStore = useStorage();
+    this.userSection = this.auth?.user?.sections[0].id || null;
     await this.fetchAll();
   },
   methods: {
@@ -257,12 +258,18 @@ export default {
       this.suppliersLoading = true;
       this.itemsLoading = true;
       try {
-        const [suppliers, items] = await Promise.all([
+        const [suppliers] = await Promise.all([
           this.supplierStore.list().catch(() => []),
-          this.storageStore.list().catch(() => []),
         ]);
+        if (this.userRole === "ADMIN") {
+          this.items = await this.storageStore.list();
+        } else {
+          const sectionId = this.userSection;
+          this.items = await this.storageStore.list(
+            sectionId ? { sectionId } : {}
+          );
+        }
         this.suppliers = suppliers;
-        this.items = items;
         this.updateKpis();
       } finally {
         this.suppliersLoading = false;

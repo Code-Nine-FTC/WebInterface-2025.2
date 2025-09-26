@@ -23,14 +23,14 @@
           append-inner-icon="mdi-magnify"
           class="flex-1"
         />
-        <v-btn
+        <!-- <v-btn
           prepend-icon="mdi-plus"
           density="comfortable"
           color="primary"
           class="flex-shrink-0 ml-2"
           height="38"
           @click="openSidebar"
-        >Cadastrar</v-btn>
+        >Cadastrar</v-btn> -->
       </div>
     </v-card>
 

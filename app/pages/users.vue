@@ -61,6 +61,7 @@
               prepend-icon="mdi-pencil"
               variant="tonal"
               @click="editUser(user)"
+              :disabled="userRole === user.role && userEmail !== user.email"
               >Editar</v-btn
             >
             <v-tooltip text="Remover" location="top">
@@ -73,6 +74,7 @@
                   variant="tonal"
                   class="ml-2"
                   @click="confirmDeleteUser(user)"
+                  :disabled="userRole === user.role && userEmail !== user.email"
                 >
                   Excluir
                 </v-btn>
@@ -91,8 +93,10 @@ definePageMeta({ layout: "default", middleware: "auth" });
 </script>
 <script>
 import { useUsers } from "~/stores/users";
+import { useAuthStore } from "~/stores/auth";
 import { useSidebarStore } from "~/stores/sidebar";
 import FormSidebar from "~/components/sidebars/users.vue";
+
 export default {
   name: "profileRegister",
   layout: "default",
@@ -125,6 +129,8 @@ export default {
   created() {
     this.list_users = useUsers();
     this.sidebar = useSidebarStore();
+    this.userRole = useAuthStore().user?.role;
+    this.userEmail = useAuthStore().user?.email;
   },
   async mounted() {
     await this.fetchData();
