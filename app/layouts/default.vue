@@ -121,6 +121,18 @@ export default {
           to: "/suppliers",
           value: "suppliers",
         },
+        {
+          title: "Pedidos",
+          icon: "mdi-cart",
+          to: "/orders",
+          value: "orders",
+        },
+        {
+          title: "Seções",
+          icon: "mdi-view-grid",
+          to: "/sections",
+          value: "sections",
+        }
       ],
       auth: null,
     };
