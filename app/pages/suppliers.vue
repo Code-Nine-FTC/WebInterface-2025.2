@@ -169,8 +169,9 @@ export default {
   computed: {
     filteredData() {
       const q = (this.search || "").toLowerCase().trim();
-      if (!q) return this.data;
-      return this.data.filter((item) =>
+      const data = this.data.filter(u => u.name !== "Usuario de Migração");
+      if (!q) return data;
+      return data.filter((item) =>
         ["nomeFantasia", "razaoSocial", "email", "telefone", "cnpj"].some(
           (k) => {
             const v = item?.[k];
@@ -178,7 +179,7 @@ export default {
           }
         )
       );
-    },
+},
   },
   methods: {
     async fetchData() {

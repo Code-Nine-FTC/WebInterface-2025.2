@@ -274,7 +274,7 @@ export default {
       const map = {
         items: this.items.length,
         crit,
-        suppliers: this.suppliers.length,
+        suppliers: this.suppliers.length - 1, // Exclui "Usuario de Migração"
         sections: this.auth?.user?.sections?.length || 0,
       };
       this.kpis = this.kpis.map((k) => ({
@@ -322,7 +322,7 @@ export default {
 .quick-action-btn {
   flex: 1 1 180px;
   max-width: 240px;
-  height: 80px;
+  height: 60px;
   justify-content: flex-start;
   font-weight: 600;
   letter-spacing: 0.3px;
