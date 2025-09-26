@@ -122,6 +122,7 @@ export default {
       search: "",
       headers: [
         { title: "Nome", key: "name" },
+        { title: "Tipo", key: "itemTypeName" },
         { title: "Estoque", key: "currentStock" },
         { title: "Unidade", key: "measure" },
         { title: "Validade", key: "expireDate" },
@@ -129,7 +130,7 @@ export default {
         { title: "Seção", key: "sectionName" },
         { title: "Stock Mínimo", key: "minimumStock" },
         { title: "Última atualização", key: "lastUpdate" },
-        { title: "QR", key: "qrCode" },
+        // { title: "QR", key: "qrCode" },
       ],
       sidebar: null,
     };

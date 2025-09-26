@@ -7,22 +7,32 @@
   >
     <v-toolbar flat density="comfortable">
       <v-toolbar-title>
-        {{ isEdit ? "Editar Tipo de Item" : "Cadastrar Tipo de Item" }}
-        <span v-if="isEdit && sidebar?.payload?.typeItem" class="ml-2 text-primary font-bold">
-          - {{ sidebar.payload.typeItem.name || sidebar.payload.typeItem.nomeTipo || sidebar.payload.typeItem.id }}
+        {{ isView ? "Detalhes do Tipo de Item" : isEdit ? "Editar Tipo de Item" : "Cadastrar Tipo de Item" }}
+        <span v-if="(isEdit || isView) && form.nomeTipo" class="ml-2 text-primary font-bold">
+          - {{ form.nomeTipo }}
         </span>
       </v-toolbar-title>
       <v-spacer />
-      <v-btn icon="mdi-close" :disabled="loading" @click="closeAndReset" />
+      <v-btn icon="mdi-close" :disabled="!isView && loading" @click="closeAndReset" />
     </v-toolbar>
-    <v-alert v-if="isEdit && sidebar?.payload?.typeItem" type="info" class="ma-2" style="word-break:break-all;">
-      {{ sidebar.payload.typeItem }}
-      <br>
-      {{ JSON.stringify(sidebar.payload.typeItem) }}
-    </v-alert>
+    <v-card v-if="(isEdit || isView) && (form.nomeTipo || selectedSectionName)" class="ma-4 pa-3" variant="tonal" color="primary">
+      <v-card-text class="pa-0">
+        <div class="d-flex flex-column gap-1">
+          <div v-if="form.nomeTipo" class="d-flex align-center gap-2">
+            <v-icon size="small" color="primary">mdi-tag</v-icon>
+            <span class="text-body-2"><strong>Nome:</strong> {{ form.nomeTipo }}</span>
+          </div>
+          <div v-if="selectedSectionName" class="d-flex align-center gap-2">
+            <v-icon size="small" color="primary">mdi-folder</v-icon>
+            <span class="text-body-2"><strong>Seção:</strong> {{ selectedSectionName }}</span>
+          </div>
+        </div>
+      </v-card-text>
+    </v-card>
     <v-divider />
 
     <v-form
+      v-if="!isView"
       ref="formRef"
       v-model="formValid"
       class="pa-4"
@@ -120,8 +130,16 @@ export default {
     isEdit() {
       return this.sidebar?.payload?.mode === "edit";
     },
+    isView() {
+      return this.sidebar?.payload?.mode === "view";
+    },
     userRole() {
       return this.authStore?.user?.role;
+    },
+    selectedSectionName() {
+      if (!this.form.sectionId) return null;
+      const section = this.sections.find(s => s.id === this.form.sectionId);
+      return section ? section.title : null;
     },
   },
   async created() {
@@ -153,7 +171,7 @@ export default {
   },
   methods: {
     async prefillIfEdit() {
-      if (this.isEdit && this.sidebar.payload?.typeItemId) {
+      if ((this.isEdit || this.isView) && this.sidebar.payload?.typeItemId) {
         const id = this.sidebar.payload.typeItemId;
         this.currentId = id;
         try {
@@ -164,7 +182,7 @@ export default {
           this.form.nomeTipo = "";
           this.form.sectionId = this.authStore.user?.sections?.[0]?.id ?? null;
         }
-      } else if (!this.isEdit) {
+      } else if (!this.isEdit && !this.isView) {
         this.currentId = null;
         this.reset();
         const userSections = this.authStore.user?.sections || [];

@@ -65,7 +65,6 @@
             item-key="id"
             :loading="loading"
             class="min-w-[900px]"
-            :clickable="true"
             @click:row="editTypeItem"
             row-class="clickable-row"
           >
@@ -188,8 +187,8 @@ export default {
     openSidebar() {
       this.sidebar?.open({ mode: "create" });
     },
-    editTypeItem(row) {
-      const item = row?.item;
+    editTypeItem(event, row) {
+      const item = row.item;
       console.log('editTypeItem chamado:', item);
       if (!item || typeof item !== 'object') return;
       this.sidebar?.open({ mode: "edit", typeItemId: item.id });
