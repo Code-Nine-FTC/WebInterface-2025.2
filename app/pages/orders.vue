@@ -1,12 +1,6 @@
 <template>
   <div class="max-w-6xl mx-auto p-6">
     <v-card class="bg-white rounded-lg shadow-md pa-4 mb-6">
-      <div>
-        <div class="d-flex flex-row items-center gap-3">
-          <v-chip variant="elevated" color="red"> Fornecedores </v-chip>
-        </div>
-      </div>
-
       <div class="d-flex flex-row items-center gap-2 mt-2">
         <v-text-field
           v-model="search"
@@ -25,15 +19,35 @@
           class="flex-shrink-0 ml-2"
           height="38"
           @click="openSidebar"
-        >Cadastrar</v-btn>
+          >Cadastrar</v-btn
+        >
       </div>
     </v-card>
+
+    <div class="kpi-grid my-6">
+      <v-card
+        v-for="k in kpis"
+        :key="k.key"
+        class="kpi-card pa-4 d-flex flex-column justify-space-between"
+        elevation="2"
+      >
+        <div class="d-flex align-center justify-space-between mb-1">
+          <span class="text-caption text-medium-emphasis font-medium">
+            {{ k.label }}
+          </span>
+          <v-icon :icon="k.icon" size="20" class="text-medium-emphasis" />
+        </div>
+        <div class="kpi-value">
+          {{ k.loading ? "…" : k.value }}
+        </div>
+      </v-card>
+    </div>
 
     <v-card class="bg-white rounded-lg shadow-md pa-4 mb-6">
       <div class="px-4 py-3 border-b border-slate-100">
         <div class="d-flex items-center gap-2 text-xs text-slate-500">
           <v-icon icon="mdi-account-multiple" class="mr-1" />
-          <span> Fornecedores </span>
+          <span> Pedidos </span>
 
           <div class="ml-auto flex items-center gap-2">
             <span class="hidden sm:inline text-slate-500">
@@ -119,11 +133,6 @@
         </div>
       </div>
     </v-card>
-
-    <FormSidebar
-      @created="handleSupplierCreated"
-      @updated="handleSupplierUpdated"
-    />
   </div>
 </template>
 
@@ -132,91 +141,151 @@ definePageMeta({ layout: "default", middleware: "auth" });
 </script>
 
 <script>
+import { useAuthStore } from "~/stores/auth";
 import { useSupplier } from "~/stores/supplier";
-import { useSidebarStore } from "~/stores/sidebar";
-import FormSidebar from "~/components/sidebars/suppliers.vue";
-import { formatCNPJ, formatTelefone, formatDate } from "~/utils/index";
+import { useStorage } from "~/stores/storage";
+import { formatCNPJ, formatDate } from "~/utils";
 
 export default {
-  name: "Suppliers",
-  layout: "default",
   data() {
     return {
-      data: [],
       auth: null,
-      loading: false,
-      search: "",
-      lastUpdated: Date.now(),
-      headers: [
-        { title: "Nome", key: "name" },
-        { title: "E-Mail", key: "email" },
-        { title: "Telefone", key: "phoneNumber" },
-        { title: "CNPJ", key: "cnpj" },
-        { title: "Última Atualização", key: "lastUpdate" },
-        { title: "Ações", key: "actions", sortable: false },
+      supplierStore: null,
+      storageStore: null,
+      suppliersLoading: false,
+      itemsLoading: false,
+      suppliers: [],
+      items: [],
+      kpis: [
+        {
+          key: "items",
+          label: "Itens",
+          icon: "mdi-package-variant",
+          value: 0,
+          loading: true,
+        },
+        {
+          key: "crit",
+          label: "Críticos",
+          icon: "mdi-alert-circle",
+          value: 0,
+          loading: true,
+        },
+        {
+          key: "suppliers",
+          label: "Fornecedores",
+          icon: "mdi-domain",
+          value: 0,
+          loading: true,
+        },
+        {
+          key: "sections",
+          label: "Seções",
+          icon: "mdi-view-grid",
+          value: 0,
+          loading: true,
+        },
       ],
-      sidebar: null,
-      supplier: null,
+      headers: [
+        { title: "Fornecedor", key: "name" },
+        { title: "CNPJ", key: "cnpj" },
+        { title: "Telefone", key: "phoneNumber" },
+        { title: "Última atualização", key: "lastUpdate" },
+        { title: "Ações", key: "actions", sortable: false, width: 100 },
+      ]
     };
   },
-  created() {
-    this.supplier = useSupplier();
-    this.sidebar = useSidebarStore();
-  },
-  async mounted() {
-    await this.fetchData();
-  },
   computed: {
-    filteredData() {
-      const q = (this.search || "").toLowerCase().trim();
-      const data = this.data.filter(u => u.name !== "Usuario de Migração");
-      if (!q) return data;
-      return data.filter((item) =>
-        ["nomeFantasia", "razaoSocial", "email", "telefone", "cnpj"].some(
-          (k) => {
-            const v = item?.[k];
-            return v && v.toString().toLowerCase().includes(q);
-          }
+    userRole() {
+      return this.auth?.user?.role;
+    },
+    quickActions() {
+      const actions = [];
+      const sidebar = useSidebarStore?.();
+    },
+    lastSuppliers() {
+      return [...this.suppliers]
+        .map((s) => ({
+          ...s,
+          name: s.name || s.nomeFantasia || s.razaoSocial || "#" + s.id,
+          lastUpdate: s.lastUpdate || s.updatedAt || s.createdAt || null,
+        }))
+        .sort(
+          (a, b) =>
+            new Date(b.lastUpdate || 0).getTime() -
+            new Date(a.lastUpdate || 0).getTime()
         )
-      );
-},
+        .slice(0, 5);
+    },
+    criticalItems() {
+      return (this.items || [])
+        .filter((it) => {
+          const qtd = it.currentStock ?? it.qtd;
+          const min = it.minimumStock ?? it.min;
+          return qtd != null && min != null && qtd <= min;
+        })
+        .slice(0, 8);
+    },
+  },
+  async created() {
+    this.auth = useAuthStore();
+    this.supplierStore = useSupplier();
+    this.storageStore = useStorage();
+    await this.fetchAll();
   },
   methods: {
-    async fetchData() {
-      this.loading = true;
+    formatCNPJ,
+    formatDate,
+    async fetchAll() {
+      this.suppliersLoading = true;
+      this.itemsLoading = true;
       try {
-        this.data = await this.supplier.list();
-        this.lastUpdated = Date.now();
-      } catch (e) {
-        console.error("Error fetching suppliers:", e);
+        const [suppliers, items] = await Promise.all([
+          this.supplierStore.list().catch(() => []),
+          this.storageStore.list().catch(() => []),
+        ]);
+        this.suppliers = suppliers;
+        this.items = items;
+        this.updateKpis();
       } finally {
-        this.loading = false;
+        this.suppliersLoading = false;
+        this.itemsLoading = false;
       }
     },
-    openSidebar() {
-      this.sidebar?.open({ mode: "create" });
-    },
-    handleSupplierCreated() {
-      this.fetchData();
-    },
-    editSupplier(item) {
-      this.sidebar?.open({ mode: "edit", supplier: item });
-    },
-    handleSupplierUpdated() {
-      this.fetchData();
-    },
-    async removeSupplier(item) {
-      if (!item?.id) return;
-      const ok = confirm("Tem certeza que deseja remover este fornecedor?");
-      if (!ok) return;
-      try {
-        await this.supplier.remove({ id: item.id });
-        this.data = this.data.filter((s) => s.id !== item.id);
-      } catch (e) {
-        console.error("Erro ao remover fornecedor:", e);
-        this.fetchData();
-      }
+    updateKpis() {
+      const crit = this.criticalItems.length;
+      const map = {
+        items: this.items.length,
+        crit,
+        suppliers: this.suppliers.length - 1, // Exclui "Usuario de Migração"
+        sections: this.auth?.user?.sections?.length || 0,
+      };
+      this.kpis = this.kpis.map((k) => ({
+        ...k,
+        value: map[k.key] ?? 0,
+        loading: false,
+      }));
     },
   },
 };
 </script>
+
+<style scoped>
+.kpi-card {
+  min-height: 110px;
+  position: relative;
+}
+
+.kpi-value {
+  font-size: 1.9rem;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.5px;
+}
+
+.kpi-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+}
+</style>
