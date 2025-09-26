@@ -39,7 +39,7 @@
                   size="small"
                   label
                   :color="roleColor(user.role)"
-                  class="text-white font-medium ml-2"
+                  class="text-white font-medium ml-2 mr-4"
                   >{{ roleName(user.role) }}</v-chip
                 >
                 <span class="text-subtitle text-grey">{{ user.email }}</span>
@@ -83,7 +83,7 @@
       </v-col>
     </v-row>
   </v-item-group>
-  <FormSidebar />
+  <FormSidebar @created="handleUserCreated" @updated="handleUserUpdated" />
 </template>
 
 <script setup>
@@ -154,7 +154,7 @@ export default {
       if (!item || !item.id) return;
       try {
         console.log("Deleting user:", item);
-        await this.list_users.remove(item.id);
+        await this.list_users.disable(item);
         this.fetchData();
       } catch (error) {
         console.error("Error deleting user:", error);

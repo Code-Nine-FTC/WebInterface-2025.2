@@ -121,12 +121,6 @@ export default {
           to: "/suppliers",
           value: "suppliers",
         },
-        {
-          title: "Seções",
-          icon: "mdi-view-sequential",
-          to: "/sections",
-          value: "sections",
-        },
       ],
       auth: null,
     };
