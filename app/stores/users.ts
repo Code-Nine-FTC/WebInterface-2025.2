@@ -53,7 +53,7 @@ export const useUsers = defineStore("users", () => {
 
   async function disable(payload: Record<string, any>) {
     try {
-      return await $api(`/users/disable/${payload.id}`, {
+      return await $api(`/users/switch/${payload.id}`, {
         method: "PATCH",
       });
     } catch (e) {

@@ -127,12 +127,12 @@ export default {
           to: "/orders",
           value: "orders",
         },
-        {
-          title: "Seções",
-          icon: "mdi-view-grid",
-          to: "/sections",
-          value: "sections",
-        }
+        // {
+        //   title: "Seções",
+        //   icon: "mdi-view-grid",
+        //   to: "/sections",
+        //   value: "sections",
+        // }
       ],
       auth: null,
     };
