@@ -123,7 +123,7 @@ export default {
     },
   },
   created() {
-    this.list_users = useUsers(isActive=true);
+    this.list_users = useUsers();
     this.sidebar = useSidebarStore();
   },
   async mounted() {
@@ -132,7 +132,7 @@ export default {
   methods: {
     async fetchData() {
       try {
-        this.data = await this.list_users.list();
+        this.data = await this.list_users.list(true);
       } catch (error) {
         console.error("Error fetching users:", error);
       }
