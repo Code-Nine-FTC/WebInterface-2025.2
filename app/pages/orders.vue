@@ -1,4 +1,13 @@
 <template>
+    <OrderSidebar
+      :visible="sidebarVisible"
+      :order="selectedOrder"
+      :isEdit="isEditOrder"
+      :items="items"
+      :suppliers="suppliers"
+      @close="closeSidebar"
+      @save="saveOrder"
+    />
   <div class="max-w-6xl mx-auto p-6">
     <v-card class="bg-white rounded-lg shadow-md pa-4 mb-6">
       <div class="d-flex flex-row items-center gap-2 mt-2">
@@ -78,28 +87,26 @@
         <div class="overflow-auto">
           <v-data-table
             :headers="headers"
-            :items="filteredData"
+            :items="orders"
             item-key="id"
             :loading="loading"
             class="min-w-[900px]"
           >
-            <template v-slot:item.lastUpdate="{ item }">
-              <span class="text-sm text-slate-700">{{
-                formatDate(item.lastUpdate)
-              }}</span>
+            <template v-slot:item.withdrawDay="{ item }">
+              <span class="text-sm text-slate-700">{{ item.withdrawDay?.split('T')[0] }}</span>
             </template>
-
+            <template v-slot:item.createdBy.name="{ item }">
+              <span class="text-sm text-slate-700">{{ item.createdBy?.name }}</span>
+            </template>
+            <template v-slot:item.name="{ item }">
+              <span class="text-sm text-slate-700">{{ item.supplier?.name || '-' }}</span>
+            </template>
             <template v-slot:item.cnpj="{ item }">
-              <span class="text-sm text-slate-700">{{
-                formatCNPJ(item.cnpj)
-              }}</span>
+              <span class="text-sm text-slate-700">{{ item.supplier?.cnpj || '-' }}</span>
             </template>
             <template v-slot:item.phoneNumber="{ item }">
-              <span class="text-sm text-slate-700">{{
-                formatTelefone(item.phoneNumber)
-              }}</span>
+              <span class="text-sm text-slate-700">{{ item.supplier?.phoneNumber || '-' }}</span>
             </template>
-
             <template v-slot:item.actions="{ item }">
               <div class="d-flex flex-row gap-1">
                 <v-tooltip text="Editar" location="top">
@@ -110,11 +117,10 @@
                       icon="mdi-pencil"
                       variant="text"
                       color="primary"
-                      @click="editSupplier(item)"
+                      @click="editOrder(item)"
                     />
                   </template>
                 </v-tooltip>
-
                 <v-tooltip text="Remover" location="top">
                   <template #activator="{ props }">
                     <v-btn
@@ -123,7 +129,7 @@
                       icon="mdi-delete"
                       variant="text"
                       color="red"
-                      @click="removeSupplier(item)"
+                      @click="removeOrder(item)"
                     />
                   </template>
                 </v-tooltip>
@@ -143,19 +149,25 @@ definePageMeta({ layout: "default", middleware: "auth" });
 <script>
 import { useAuthStore } from "~/stores/auth";
 import { useSupplier } from "~/stores/supplier";
+import { useItems } from "~/stores/items";
 import { useStorage } from "~/stores/storage";
+import { useOrders } from "~/stores/orders";
 import { formatCNPJ, formatDate } from "~/utils";
+import OrderSidebar from "~/components/sidebars/order.vue";
 
 export default {
   data() {
     return {
       auth: null,
       supplierStore: null,
+      itemsStore: null,
       storageStore: null,
       suppliersLoading: false,
       itemsLoading: false,
       suppliers: [],
       items: [],
+      orders: [],
+      ordersStore: null,
       kpis: [
         {
           key: "items",
@@ -187,12 +199,15 @@ export default {
         },
       ],
       headers: [
-        { title: "Fornecedor", key: "name" },
-        { title: "CNPJ", key: "cnpj" },
-        { title: "Telefone", key: "phoneNumber" },
-        { title: "Última atualização", key: "lastUpdate" },
+        { title: "ID", key: "id" },
+        { title: "Status", key: "status" },
+        { title: "Data de Retirada", key: "withdrawDay" },
+        { title: "Criado por", key: "createdBy.name" },
         { title: "Ações", key: "actions", sortable: false, width: 100 },
-      ]
+      ],
+      sidebarVisible: false,
+      selectedOrder: null,
+      isEditOrder: false,
     };
   },
   computed: {
@@ -230,34 +245,100 @@ export default {
   async created() {
     this.auth = useAuthStore();
     this.supplierStore = useSupplier();
+    this.itemsStore = useItems();
     this.storageStore = useStorage();
+    this.ordersStore = useOrders();
     await this.fetchAll();
   },
   methods: {
     formatCNPJ,
     formatDate,
+    openSidebar() {
+      this.selectedOrder = null;
+      this.isEditOrder = false;
+      this.sidebarVisible = true;
+    },
+    closeSidebar() {
+      this.sidebarVisible = false;
+      this.selectedOrder = null;
+      this.isEditOrder = false;
+    },
+    editOrder(order) {
+      this.selectedOrder = order;
+      this.isEditOrder = true;
+      this.sidebarVisible = true;
+    },
+    formatDateTime(dateStr) {
+      if (dateStr && dateStr.length === 10) {
+        return dateStr + "T00:00:00";
+      }
+      return dateStr;
+    },
+    async saveOrder(order) {
+      const items = (Array.isArray(order.items) ? order.items : [order.items])
+        .filter(Boolean)
+        .map(i => typeof i === 'object' ? i.id : i);
+      const itemQuantities = {};
+      items.forEach(id => { itemQuantities[id] = 1; });
+      const payload = {
+        status: order.status,
+        withdrawDay: this.formatDateTime(order.withdrawDay),
+        itemQuantities,
+      };
+      console.log('Payload to backend:', payload);
+      if (!Object.keys(itemQuantities).length) {
+        alert('Selecione pelo menos um item para o pedido!');
+        return;
+      }
+      if (this.isEditOrder) {
+        await this.ordersStore.updateStatus(order.id, order.status ?? "PENDING");
+      } else {
+        await this.ordersStore.create(payload);
+      }
+      await this.fetchOrders();
+      this.closeSidebar();
+    },
+    async removeOrder(order) {
+      await this.ordersStore.remove(order.id);
+      await this.fetchOrders();
+    },
     async fetchAll() {
       this.suppliersLoading = true;
       this.itemsLoading = true;
       try {
         const [suppliers, items] = await Promise.all([
           this.supplierStore.list().catch(() => []),
-          this.storageStore.list().catch(() => []),
+          this.itemsStore.list().catch(() => []),
         ]);
         this.suppliers = suppliers;
-        this.items = items;
+        this.items = items
+          .map(it => ({
+            id: it.id ?? it.itemId ?? it._id,
+            name: String(
+              it.name ||
+              it.nome ||
+              it.nomeFantasia ||
+              it.descricao ||
+              (it.id ?? it.itemId ?? it._id)
+            )
+          }))
+          .filter(it => it.id);
+        await this.fetchOrders();
         this.updateKpis();
       } finally {
         this.suppliersLoading = false;
         this.itemsLoading = false;
       }
     },
+    async fetchOrders() {
+  this.orders = await this.ordersStore.list();
+    },
     updateKpis() {
       const crit = this.criticalItems.length;
       const map = {
         items: this.items.length,
         crit,
-        suppliers: this.suppliers.length - 1, // Exclui "Usuario de Migração"
+        suppliers: this.suppliers.length - 1,
         sections: this.auth?.user?.sections?.length || 0,
       };
       this.kpis = this.kpis.map((k) => ({
