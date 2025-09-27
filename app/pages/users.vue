@@ -123,7 +123,7 @@ export default {
     },
   },
   created() {
-    this.list_users = useUsers();
+    this.list_users = useUsers(isActive=true);
     this.sidebar = useSidebarStore();
   },
   async mounted() {

@@ -5,9 +5,13 @@ export const useUsers = defineStore("users", () => {
   const users = ref<Array<any>>([]);
   const { $api } = useNuxtApp();
 
-  async function list() {
+  async function list(isActive?: boolean) {
     try {
-      const res: any = await $api("/users");
+      const res: any = await $api("/users/", {
+        params: {
+          isActive,
+        },
+      });
       if (Array.isArray(res)) users.value = res;
       else if (res?.users) users.value = res.users;
       else if (res?.data) users.value = res.data;
