@@ -7,7 +7,7 @@ export const useUsers = defineStore("users", () => {
 
   async function list(isActive?: boolean) {
     try {
-      const res: any = await $api("/users/", {
+      const res: any = await $api("/users", {
         params: {
           isActive,
         },
