@@ -43,7 +43,7 @@
       </v-card>
     </div>
 
-    <v-card class="bg-white rounded-lg shadow-md pa-4 mb-6">
+  <v-card class="bg-white rounded-lg shadow-md pa-4 mb-6">
       <div class="px-4 py-3 border-b border-slate-100">
         <div class="d-flex items-center gap-2 text-xs text-slate-500">
           <v-icon icon="mdi-account-multiple" class="mr-1" />
@@ -102,28 +102,15 @@
 
             <template v-slot:item.actions="{ item }">
               <div class="d-flex flex-row gap-1">
-                <v-tooltip text="Editar" location="top">
+                <v-tooltip text="Ver" location="top">
                   <template #activator="{ props }">
                     <v-btn
                       v-bind="props"
                       size="small"
-                      icon="mdi-pencil"
+                      icon="mdi-eye"
                       variant="text"
                       color="primary"
-                      @click="editSupplier(item)"
-                    />
-                  </template>
-                </v-tooltip>
-
-                <v-tooltip text="Remover" location="top">
-                  <template #activator="{ props }">
-                    <v-btn
-                      v-bind="props"
-                      size="small"
-                      icon="mdi-delete"
-                      variant="text"
-                      color="red"
-                      @click="removeSupplier(item)"
+                      @click="viewOrder(item)"
                     />
                   </template>
                 </v-tooltip>
@@ -133,6 +120,7 @@
         </div>
       </div>
     </v-card>
+    <OrdersFormSidebar @created="handleOrderCreated" />
   </div>
 </template>
 
@@ -144,7 +132,10 @@ definePageMeta({ layout: "default", middleware: "auth" });
 import { useAuthStore } from "~/stores/auth";
 import { useSupplier } from "~/stores/supplier";
 import { useStorage } from "~/stores/storage";
-import { formatCNPJ, formatDate } from "~/utils";
+import { useSidebarStore } from "~/stores/sidebar";
+import { useOrders } from "~/stores/orders";
+import OrdersFormSidebar from "~/components/sidebars/orders.vue";
+import { formatCNPJ, formatDate, formatTelefone } from "~/utils";
 
 export default {
   data() {
@@ -152,10 +143,15 @@ export default {
       auth: null,
       supplierStore: null,
       storageStore: null,
-      suppliersLoading: false,
+      sidebar: null,
+  suppliersLoading: false,
       itemsLoading: false,
       suppliers: [],
       items: [],
+      search: "",
+      loading: false,
+      lastUpdated: Date.now(),
+  orders: [],
       kpis: [
         {
           key: "items",
@@ -187,21 +183,27 @@ export default {
         },
       ],
       headers: [
-        { title: "Fornecedor", key: "name" },
-        { title: "CNPJ", key: "cnpj" },
-        { title: "Telefone", key: "phoneNumber" },
+        { title: "Pedido", key: "id", width: 100 },
+        { title: "Fornecedor", key: "supplierName" },
+        { title: "Itens", key: "itemsCount" },
         { title: "Última atualização", key: "lastUpdate" },
         { title: "Ações", key: "actions", sortable: false, width: 100 },
       ]
     };
   },
   computed: {
+    filteredData() {
+      const q = (this.search || "").toLowerCase().trim();
+      const data = (this.orders || []).map((o) => ({
+        ...o,
+        supplierName: o.supplierName || o.supplier?.name || o.supplier?.nomeFantasia || o.supplierId,
+        itemsCount: o.itemsCount ?? o.items?.length ?? 0,
+      }));
+      if (!q) return data;
+      return data.filter((o) => [String(o.id), o.supplierName].some((v) => String(v).toLowerCase().includes(q)));
+    },
     userRole() {
       return this.auth?.user?.role;
-    },
-    quickActions() {
-      const actions = [];
-      const sidebar = useSidebarStore?.();
     },
     lastSuppliers() {
       return [...this.suppliers]
@@ -231,25 +233,33 @@ export default {
     this.auth = useAuthStore();
     this.supplierStore = useSupplier();
     this.storageStore = useStorage();
+    this.sidebar = useSidebarStore();
+    this.ordersStore = useOrders();
     await this.fetchAll();
   },
   methods: {
     formatCNPJ,
     formatDate,
+    formatTelefone,
     async fetchAll() {
+      this.loading = true;
       this.suppliersLoading = true;
       this.itemsLoading = true;
       try {
-        const [suppliers, items] = await Promise.all([
+        const [suppliers, items, orders] = await Promise.all([
           this.supplierStore.list().catch(() => []),
           this.storageStore.list().catch(() => []),
+          this.ordersStore.list().catch(() => []),
         ]);
         this.suppliers = suppliers;
         this.items = items;
+        this.orders = orders;
         this.updateKpis();
+        this.lastUpdated = Date.now();
       } finally {
         this.suppliersLoading = false;
         this.itemsLoading = false;
+        this.loading = false;
       }
     },
     updateKpis() {
@@ -265,6 +275,18 @@ export default {
         value: map[k.key] ?? 0,
         loading: false,
       }));
+    },
+    openSidebar() {
+      this.sidebar?.open({ mode: "create" });
+    },
+    handleOrderCreated(order) {
+      // insere no topo e atualiza lastUpdated
+      this.orders = [order, ...this.orders];
+      this.lastUpdated = Date.now();
+    },
+    viewOrder(item) {
+      // Placeholder até termos detalhes do pedido
+      console.log("Ver pedido", item);
     },
   },
 };
