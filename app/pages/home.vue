@@ -200,9 +200,14 @@ export default {
             run: () => this.$router.push("/suppliers"),
           },
           {
-            label: "Novo Item",
+            label: "Stock",
             color: "indigo",
             run: () => this.$router.push("/storage"),
+          },
+          {
+            label: "Pedidos",
+            color: "primary",
+            run: () => this.$router.push("/orders"),
           },
           {
             label: "Gerenciar Usuários",
@@ -210,13 +215,7 @@ export default {
             run: () => this.$router.push("/users"),
           }
         );
-        if (this.userRole === "ADMIN") {
-          actions.push({
-            label: "Nova Seção",
-            color: "primary",
-            run: () => this.$router.push("/sections"),
-          });
-        }
+        // Botão "Nova Seção" ocultado conforme solicitação
       }
       return actions;
     },
