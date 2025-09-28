@@ -75,6 +75,17 @@
       </div>
 
       <div class="p-4">
+        <!-- Filtros por status -->
+        <div class="mb-3">
+          <v-chip-group v-model="activeStatus" mandatory class="flex-wrap" selected-class="text-white">
+            <v-chip value="ALL" size="small" variant="tonal">Todos</v-chip>
+            <v-chip value="PENDING" size="small" color="blue" variant="tonal">Pendente</v-chip>
+            <v-chip value="APPROVED" size="small" color="green" variant="tonal">Aprovado</v-chip>
+            <v-chip value="PROCESSING" size="small" color="indigo" variant="tonal">Processando</v-chip>
+            <v-chip value="COMPLETED" size="small" color="purple" variant="tonal">Concluído</v-chip>
+            <v-chip value="CANCELLED" size="small" color="red" variant="tonal">Cancelado</v-chip>
+          </v-chip-group>
+        </div>
         <div class="overflow-auto">
           <v-data-table
             :headers="headers"
@@ -121,7 +132,7 @@
         </div>
       </div>
     </v-card>
-    <OrdersFormSidebar @created="handleOrderCreated" />
+  <OrdersFormSidebar @created="handleOrderCreated" @updated="handleOrderUpdated" />
   </div>
 </template>
 
@@ -153,6 +164,7 @@ export default {
       loading: false,
       lastUpdated: Date.now(),
   orders: [],
+    activeStatus: 'ALL',
       kpis: [
         {
           key: "items",
@@ -198,15 +210,18 @@ export default {
       const q = (this.search || "").toLowerCase().trim();
       const data = (this.orders || []).map((o) => {
         const itemsCount = o.itemsCount ?? (Array.isArray(o.items) ? o.items.length : (o.itemQuantities ? Object.keys(o.itemQuantities).length : 0));
+        const statusKey = this.normalizeStatusKey(o.status);
         return {
           ...o,
           itemsCount,
           status: o.status || "pendente",
+          statusKey,
           lastUpdate: o.updatedAt || o.createdAt || o.lastUpdate,
         };
       });
-      if (!q) return data;
-      return data.filter((o) => [String(o.id), o.status, o.withdrawDay && new Date(o.withdrawDay).toLocaleDateString("pt-BR")]
+      const byStatus = this.activeStatus === 'ALL' ? data : data.filter((o) => o.statusKey === this.activeStatus);
+      if (!q) return byStatus;
+      return byStatus.filter((o) => [String(o.id), o.status, o.withdrawDay && new Date(o.withdrawDay).toLocaleDateString("pt-BR")]
         .filter(Boolean)
         .some((v) => String(v).toLowerCase().includes(q)));
     },
@@ -247,15 +262,27 @@ export default {
   },
   methods: {
     formatDate,
+    normalizeStatusKey(s) {
+      const x = String(s || '').toUpperCase();
+      if (["PENDENTE"].includes(x)) return 'PENDING';
+      if (["APROVADO", "APPROVED"].includes(x)) return 'APPROVED';
+      if (["PROCESSANDO", "PROCESSING"].includes(x)) return 'PROCESSING';
+      if (["CONCLUIDO", "CONCLUÍDO", "COMPLETED"].includes(x)) return 'COMPLETED';
+      if (["CANCELADO", "CANCELLED"].includes(x)) return 'CANCELLED';
+      if (["PENDING"].includes(x)) return 'PENDING';
+      return 'PENDING';
+    },
     statusLabel(s) {
-      const map = { pendente: "Pendente", aprovado: "Aprovado", cancelado: "Cancelado", concluido: "Concluído" };
-      return map[(s || "").toLowerCase()] || s || "—";
+      const key = this.normalizeStatusKey(s);
+      const map = { PENDING: "Pendente", APPROVED: "Aprovado", PROCESSING: "Processando", COMPLETED: "Concluído", CANCELLED: "Cancelado" };
+      return map[key] || s || "—";
     },
     statusColor(s) {
-      const x = (s || "").toLowerCase();
-      if (x === "aprovado" || x === "concluido") return "green";
-      if (x === "cancelado") return "red";
-      return "blue";
+      const key = this.normalizeStatusKey(s);
+      if (key === 'APPROVED' || key === 'COMPLETED') return 'green';
+      if (key === 'CANCELLED') return 'red';
+      if (key === 'PROCESSING') return 'indigo';
+      return 'blue';
     },
     async fetchAll() {
       this.loading = true;
@@ -300,9 +327,14 @@ export default {
       this.orders = [order, ...this.orders];
       this.lastUpdated = Date.now();
     },
+    handleOrderUpdated(p) {
+      if (!p?.id) return;
+      this.orders = (this.orders || []).map((o) => o.id === p.id ? { ...o, ...p } : o);
+      this.lastUpdated = Date.now();
+    },
     viewOrder(item) {
-      // Placeholder até termos detalhes do pedido
-      console.log("Ver pedido", item);
+      const id = item?.id ?? item
+      this.sidebar?.open({ mode: "view", orderId: id });
     },
   },
 };

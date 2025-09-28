@@ -24,6 +24,7 @@
           class="flex-1"
         />
         <v-btn
+          v-if="false"
           prepend-icon="mdi-plus"
           density="comfortable"
           color="primary"
