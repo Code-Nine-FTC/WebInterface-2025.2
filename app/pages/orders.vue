@@ -101,9 +101,9 @@
             </template>
 
             <template v-slot:item.withdrawDay="{ item }">
-              <span class="text-sm text-slate-700">{{
-                formatDate(item.withdrawDay)
-              }}</span>
+              <span class="text-sm text-slate-700">
+                {{ normalizeStatusKey(item.status) === 'COMPLETED' ? formatDate(item.withdrawDay) : '—' }}
+              </span>
             </template>
 
             <template v-slot:item.status="{ item }">
@@ -198,7 +198,6 @@ export default {
       headers: [
         { title: "Código", key: "id", width: 100 },
         { title: "Retirada", key: "withdrawDay" },
-        { title: "Itens", key: "itemsCount", width: 90 },
         { title: "Status", key: "status", width: 120 },
         { title: "Última atualização", key: "lastUpdate" },
         { title: "Ações", key: "actions", sortable: false, width: 100 },
@@ -209,7 +208,19 @@ export default {
     filteredData() {
       const q = (this.search || "").toLowerCase().trim();
       const data = (this.orders || []).map((o) => {
-        const itemsCount = o.itemsCount ?? (Array.isArray(o.items) ? o.items.length : (o.itemQuantities ? Object.keys(o.itemQuantities).length : 0));
+        const itemsCount =
+          // valores numéricos diretos
+          (typeof o.itemsCount === 'number' ? o.itemsCount :
+          typeof o.items_count === 'number' ? o.items_count :
+          typeof o.itensCount === 'number' ? o.itensCount : null)
+          ??
+          // arrays comuns
+          (Array.isArray(o.items) ? o.items.length :
+          Array.isArray(o.itens) ? o.itens.length :
+          Array.isArray(o.itemIds) ? o.itemIds.length : null)
+          ??
+          // objeto de quantidades (conta itens distintos)
+          (o.itemQuantities && typeof o.itemQuantities === 'object' ? Object.keys(o.itemQuantities).length : 0);
         const statusKey = this.normalizeStatusKey(o.status);
         return {
           ...o,
@@ -221,7 +232,12 @@ export default {
       });
       const byStatus = this.activeStatus === 'ALL' ? data : data.filter((o) => o.statusKey === this.activeStatus);
       if (!q) return byStatus;
-      return byStatus.filter((o) => [String(o.id), o.status, o.withdrawDay && new Date(o.withdrawDay).toLocaleDateString("pt-BR")]
+      return byStatus.filter((o) => [
+          String(o.id),
+          o.status,
+          this.statusLabel(o.status),
+          o.withdrawDay && new Date(o.withdrawDay).toLocaleDateString("pt-BR")
+        ]
         .filter(Boolean)
         .some((v) => String(v).toLowerCase().includes(q)));
     },
@@ -322,10 +338,9 @@ export default {
     openSidebar() {
       this.sidebar?.open({ mode: "create" });
     },
-    handleOrderCreated(order) {
-      // insere no topo e atualiza lastUpdated
-      this.orders = [order, ...this.orders];
-      this.lastUpdated = Date.now();
+    async handleOrderCreated() {
+      // Após criar, recarrega a listagem do backend (mobile-equivalente)
+      await this.fetchAll();
     },
     handleOrderUpdated(p) {
       if (!p?.id) return;

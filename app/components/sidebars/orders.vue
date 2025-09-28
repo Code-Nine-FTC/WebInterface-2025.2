@@ -43,7 +43,7 @@
                 class="flex-wrap"
                 divided
                 color="primary"
-                mandatory="false"
+                :mandatory="false"
                 :disabled="loading || isTerminalStatus"
                 @update:modelValue="handleStatusToggle"
               >
@@ -307,7 +307,7 @@ export default {
       return this.sidebar?.payload?.mode === "view";
     },
     currentStatusUpper() {
-      return String(this.orderDetails?.status || 'PENDING').toUpperCase();
+      return this.normalizeStatusKey(this.orderDetails?.status || 'PENDING');
     },
     isTerminalStatus() {
       return this.currentStatusUpper === 'COMPLETED' || this.currentStatusUpper === 'CANCELLED';
@@ -419,6 +419,15 @@ export default {
     }
   },
   methods: {
+    normalizeStatusKey(s) {
+      const x = String(s || '').toUpperCase();
+      if (["PENDENTE", "PENDING"].includes(x)) return 'PENDING';
+      if (["APROVADO", "APPROVED"].includes(x)) return 'APPROVED';
+      if (["PROCESSANDO", "PROCESSING"].includes(x)) return 'PROCESSING';
+      if (["CONCLUIDO", "CONCLUÍDO", "COMPLETED"].includes(x)) return 'COMPLETED';
+      if (["CANCELADO", "CANCELLED"].includes(x)) return 'CANCELLED';
+      return 'PENDING';
+    },
     formatDate(value) {
       if (!value) return "—";
       try {
@@ -604,17 +613,10 @@ export default {
         }
         const withdrawDay = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
         const payload = { withdrawDay, itemQuantities };
-        const created = await this.ordersStore.create(payload);
-        // Prepara campos para tabela (fallbacks caso API retorne diferente)
-        const supplier = this.form.supplierId ? this.suppliers.find((s) => s.id === this.form.supplierId) : null;
-        const normalized = {
-          id: created?.id ?? Date.now(),
-          supplierName: created?.supplierName || supplier?.name || supplier?.nomeFantasia || "—",
-          itemsCount: created?.itemsCount ?? Object.keys(itemQuantities).length ?? 0,
-          lastUpdate: created?.updatedAt || created?.createdAt || Date.now(),
-          ...created,
-        };
-        this.$emit("created", normalized);
+        await this.ordersStore.create(payload);
+        // Snackbar de sucesso e emissão de evento simples
+        this.snack = { show: true, color: 'success', text: 'Pedido criado com sucesso!' };
+        this.$emit("created", { created: true });
         this.sidebar.close();
         this.reset();
       } catch (e) {

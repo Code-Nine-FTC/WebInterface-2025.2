@@ -8,10 +8,20 @@ export const useOrders = defineStore("orders", () => {
   async function list() {
     try {
       const res: any = await $api("/orders");
-      if (Array.isArray(res)) orders.value = res;
-      else if (res?.items) orders.value = res.items;
-      else if (res?.data) orders.value = res.data;
-      else orders.value = [];
+      if (Array.isArray(res)) {
+        orders.value = res;
+      } else if (res && typeof res === 'object') {
+        const keys = ['content', 'orders', 'data', 'results', 'items'];
+        let found: any[] | null = null;
+        for (const k of keys) {
+          if (Array.isArray(res[k])) { found = res[k]; break; }
+        }
+        if (found) orders.value = found;
+        else if (res.id != null) orders.value = [res];
+        else orders.value = [];
+      } else {
+        orders.value = [];
+      }
       return orders.value;
     } catch (e) {
       console.error("Failed to list orders:", e);
@@ -21,10 +31,13 @@ export const useOrders = defineStore("orders", () => {
 
   async function create(payload: { withdrawDay: string; itemQuantities: Record<string, number> }) {
     try {
-      return await $api("/orders", {
+      const res: any = await $api("/orders", {
         method: "POST",
         body: payload,
       });
+      // Backend pode não retornar JSON no 200; siga o padrão do mobile
+      if (res && typeof res === "object") return res;
+      return null;
     } catch (e) {
       console.error("Failed to create order:", e);
       throw e;
@@ -45,10 +58,23 @@ export const useOrders = defineStore("orders", () => {
 
   async function updateStatus(orderId: string | number, status: string) {
     try {
-      return await $api(`/orders/${orderId}/status`, {
+      const res: any = await $api(`/orders/${orderId}/status`, {
         method: "PUT",
         body: { status },
       });
+      // Backend pode retornar vazio/texto; padroniza retorno como objeto similar ao mobile
+      if (res && typeof res === "object") return res;
+      const now = new Date().toISOString();
+      return {
+        id: orderId,
+        withdrawDay: now,
+        status,
+        createdAt: now,
+        updatedAt: now,
+        lastUpdate: now,
+        itemIds: [],
+        supplierIds: [],
+      };
     } catch (e) {
       console.error("Failed to update order status:", e);
       throw e;
