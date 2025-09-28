@@ -25,7 +25,6 @@
             item-title="label"
             item-value="id"
             :loading="suppliersLoading"
-            :rules="[rules.required]"
             variant="outlined"
             density="comfortable"
             hide-details="auto"
@@ -204,11 +203,8 @@ export default {
       return !!(this.pick.itemId && Number.isInteger(this.pick.qtd) && this.pick.qtd > 0);
     },
     canSubmit() {
-      return !!(
-        this.form.supplierId &&
-        this.form.items.length > 0 &&
-        this.form.items.every((i) => Number.isInteger(i.qtd) && i.qtd > 0)
-      );
+      // Fornecedor é opcional; só validamos itens com quantidades inteiras > 0
+      return this.form.items.length > 0 && this.form.items.every((i) => Number.isInteger(i.qtd) && i.qtd > 0);
     },
   },
   async created() {
@@ -296,18 +292,20 @@ export default {
       if (!this.canSubmit) return;
       this.loading = true;
       try {
-        // Monta payload do pedido
-        const payload = {
-          supplierId: this.form.supplierId,
-          items: this.form.items.map((i) => ({ itemId: i.itemId, quantity: i.qtd })),
-        };
+        // Monta payload conforme contrato do app mobile
+        const itemQuantities = {};
+        for (const i of this.form.items) {
+          itemQuantities[String(i.itemId)] = Math.round(Number(i.qtd));
+        }
+        const withdrawDay = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+        const payload = { withdrawDay, itemQuantities };
         const created = await this.ordersStore.create(payload);
         // Prepara campos para tabela (fallbacks caso API retorne diferente)
-        const supplier = this.suppliers.find((s) => s.id === payload.supplierId);
+        const supplier = this.form.supplierId ? this.suppliers.find((s) => s.id === this.form.supplierId) : null;
         const normalized = {
           id: created?.id ?? Date.now(),
-          supplierName: created?.supplierName || supplier?.name || supplier?.nomeFantasia || `#${payload.supplierId}`,
-          itemsCount: created?.itemsCount ?? payload.items?.length ?? 0,
+          supplierName: created?.supplierName || supplier?.name || supplier?.nomeFantasia || "—",
+          itemsCount: created?.itemsCount ?? Object.keys(itemQuantities).length ?? 0,
           lastUpdate: created?.updatedAt || created?.createdAt || Date.now(),
           ...created,
         };

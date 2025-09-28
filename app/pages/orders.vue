@@ -66,7 +66,7 @@
               variant="text"
               color="primary"
               :loading="loading"
-              @click="fetchData"
+              @click="fetchAll"
             >
               Atualizar
             </v-btn>
@@ -89,15 +89,16 @@
               }}</span>
             </template>
 
-            <template v-slot:item.cnpj="{ item }">
+            <template v-slot:item.withdrawDay="{ item }">
               <span class="text-sm text-slate-700">{{
-                formatCNPJ(item.cnpj)
+                formatDate(item.withdrawDay)
               }}</span>
             </template>
-            <template v-slot:item.phoneNumber="{ item }">
-              <span class="text-sm text-slate-700">{{
-                formatTelefone(item.phoneNumber)
-              }}</span>
+
+            <template v-slot:item.status="{ item }">
+              <v-chip :color="statusColor(item.status)" size="small" label class="text-white font-medium">
+                {{ statusLabel(item.status) }}
+              </v-chip>
             </template>
 
             <template v-slot:item.actions="{ item }">
@@ -135,7 +136,7 @@ import { useStorage } from "~/stores/storage";
 import { useSidebarStore } from "~/stores/sidebar";
 import { useOrders } from "~/stores/orders";
 import OrdersFormSidebar from "~/components/sidebars/orders.vue";
-import { formatCNPJ, formatDate, formatTelefone } from "~/utils";
+import { formatDate } from "~/utils";
 
 export default {
   data() {
@@ -183,9 +184,10 @@ export default {
         },
       ],
       headers: [
-        { title: "Pedido", key: "id", width: 100 },
-        { title: "Fornecedor", key: "supplierName" },
-        { title: "Itens", key: "itemsCount" },
+        { title: "Código", key: "id", width: 100 },
+        { title: "Retirada", key: "withdrawDay" },
+        { title: "Itens", key: "itemsCount", width: 90 },
+        { title: "Status", key: "status", width: 120 },
         { title: "Última atualização", key: "lastUpdate" },
         { title: "Ações", key: "actions", sortable: false, width: 100 },
       ]
@@ -194,13 +196,19 @@ export default {
   computed: {
     filteredData() {
       const q = (this.search || "").toLowerCase().trim();
-      const data = (this.orders || []).map((o) => ({
-        ...o,
-        supplierName: o.supplierName || o.supplier?.name || o.supplier?.nomeFantasia || o.supplierId,
-        itemsCount: o.itemsCount ?? o.items?.length ?? 0,
-      }));
+      const data = (this.orders || []).map((o) => {
+        const itemsCount = o.itemsCount ?? (Array.isArray(o.items) ? o.items.length : (o.itemQuantities ? Object.keys(o.itemQuantities).length : 0));
+        return {
+          ...o,
+          itemsCount,
+          status: o.status || "pendente",
+          lastUpdate: o.updatedAt || o.createdAt || o.lastUpdate,
+        };
+      });
       if (!q) return data;
-      return data.filter((o) => [String(o.id), o.supplierName].some((v) => String(v).toLowerCase().includes(q)));
+      return data.filter((o) => [String(o.id), o.status, o.withdrawDay && new Date(o.withdrawDay).toLocaleDateString("pt-BR")]
+        .filter(Boolean)
+        .some((v) => String(v).toLowerCase().includes(q)));
     },
     userRole() {
       return this.auth?.user?.role;
@@ -238,9 +246,17 @@ export default {
     await this.fetchAll();
   },
   methods: {
-    formatCNPJ,
     formatDate,
-    formatTelefone,
+    statusLabel(s) {
+      const map = { pendente: "Pendente", aprovado: "Aprovado", cancelado: "Cancelado", concluido: "Concluído" };
+      return map[(s || "").toLowerCase()] || s || "—";
+    },
+    statusColor(s) {
+      const x = (s || "").toLowerCase();
+      if (x === "aprovado" || x === "concluido") return "green";
+      if (x === "cancelado") return "red";
+      return "blue";
+    },
     async fetchAll() {
       this.loading = true;
       this.suppliersLoading = true;
