@@ -30,8 +30,31 @@ export const useStorage = defineStore("storage", () => {
     }
   }
 
+  async function getById(id: number | string) {
+    try {
+      return await $api(`/items/${id}`);
+    } catch (e) {
+      console.error("Failed to get item by id:", e);
+      throw e;
+    }
+  }
+
+  async function updateItem(id: number | string, payload: Record<string, any>) {
+    try {
+      return await $api(`/items/${id}`, {
+        method: "PUT",
+        body: payload,
+      });
+    } catch (e) {
+      console.error("Failed to update item:", e);
+      throw e;
+    }
+  }
+
   return {
     list,
     items,
+    getById,
+    updateItem,
   };
 });

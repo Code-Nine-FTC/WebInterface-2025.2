@@ -83,6 +83,22 @@
             :loading="loading"
             class="min-w-[900px]"
           >
+            <template v-slot:item.actions="{ item }">
+              <div class="d-flex flex-row gap-1">
+                <v-tooltip text="Editar" location="top">
+                  <template #activator="{ props }">
+                    <v-btn
+                      v-bind="props"
+                      size="small"
+                      icon="mdi-pencil"
+                      variant="text"
+                      color="primary"
+                      @click="editItem(item)"
+                    />
+                  </template>
+                </v-tooltip>
+              </div>
+            </template>
             <template v-slot:item.expireDate="{ item }">
               <span class="text-sm text-slate-700">{{
                 formatDate(item.expireDate)
@@ -98,7 +114,7 @@
         </div>
       </div>
     </v-card>
-    <FormSidebar />
+    <StorageItemSidebar @updated="onItemUpdated" />
   </div>
 </template>
 
@@ -109,7 +125,7 @@ definePageMeta({ layout: "default" });
 <script>
 import { useAuthStore } from "~/stores/auth";
 import { useStorage } from "~/stores/storage";
-import FormSidebar from "~/components/sidebar.exemple.vue";
+import StorageItemSidebar from "~/components/sidebars/storage-item.vue";
 import { useSidebarStore } from "~/stores/sidebar";
 
 export default {
@@ -131,6 +147,7 @@ export default {
         { title: "Seção", key: "sectionName" },
         { title: "Stock Mínimo", key: "minimumStock" },
         { title: "Última atualização", key: "lastUpdate" },
+        { title: "Ações", key: "actions", sortable: false, width: 110 },
         // { title: "QR", key: "qrCode" },
       ],
       sidebar: null,
@@ -192,6 +209,7 @@ export default {
     },
   },
   methods: {
+    onItemUpdated() { this.fetchData(); },
     async fetchData() {
       this.loading = true;
       try {
@@ -224,7 +242,13 @@ export default {
       }
     },
     openSidebar() {
-      this.sidebar?.open({ mode: "create" });
+      this.sidebar?.open({ mode: "edit-item" });
+    },
+    editItem(item) {
+      const raw = item?.raw ?? item;
+      const id = raw?.itemId ?? raw?.id;
+      if (!id) return;
+      this.sidebar?.open({ mode: 'edit-item', itemId: id });
     },
     goToTypeItems() {
       this.$router.push({ path: '/typeitems' });
