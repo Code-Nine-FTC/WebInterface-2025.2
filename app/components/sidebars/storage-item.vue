@@ -35,9 +35,6 @@
           <v-text-field v-model.number="form.minimumStock" type="number" min="0" step="1" inputmode="numeric" :rules="[rules.nonneg]" label="Stock Mínimo" variant="outlined" density="comfortable" />
         </v-col>
         <v-col cols="12" md="6">
-          <v-text-field v-model.number="form.maximumStock" type="number" min="0" step="1" inputmode="numeric" :rules="[rules.nonneg]" label="Stock Máximo" variant="outlined" density="comfortable" />
-        </v-col>
-        <v-col cols="12" md="6">
           <v-select
             v-model.number="form.supplierId"
             :items="supplierOptions"
@@ -63,9 +60,7 @@
             density="comfortable"
           />
         </v-col>
-        <v-col cols="12">
-          <v-switch v-model="form.isActive" color="green" inset label="Ativo" />
-        </v-col>
+        
 
         <v-col cols="12" class="d-flex justify-end ga-2 mt-4">
           <v-btn type="button" variant="text" :disabled="loading" @click="reset">Limpar</v-btn>
@@ -110,7 +105,6 @@ export default {
         supplierId: null,
         itemTypeId: null,
         minimumStock: 0,
-        maximumStock: 0,
         isActive: true,
       },
       rules: {
@@ -181,7 +175,6 @@ export default {
                 supplierId: data.supplierId != null ? Number(data.supplierId) : null,
                 itemTypeId: data.itemTypeId != null ? Number(data.itemTypeId) : null,
                 minimumStock: data.minimumStock ?? 0,
-                maximumStock: data.maximumStock ?? 0,
                 isActive: data.isActive ?? data.active ?? true,
               };
             }
@@ -212,7 +205,7 @@ export default {
     closeAndReset() { this.sidebar.close(); this.reset(); },
     reset() {
       this.error = null;
-      this.form = { id: null, name: '', currentStock: 0, measure: '', expireDate: '', supplierId: null, itemTypeId: null, minimumStock: 0, maximumStock: 0, isActive: true };
+  this.form = { id: null, name: '', currentStock: 0, measure: '', expireDate: '', supplierId: null, itemTypeId: null, minimumStock: 0, isActive: true };
       if (this.$refs.formRef) this.$refs.formRef.resetValidation();
     },
     async submit() {
@@ -231,7 +224,6 @@ export default {
           supplierId: this.form.supplierId,
           itemTypeId: this.form.itemTypeId,
           minimumStock: Number(this.form.minimumStock),
-          maximumStock: Number(this.form.maximumStock),
           isActive: !!this.form.isActive,
         };
         const res = await this.storage.updateItem(this.form.id, payload);
