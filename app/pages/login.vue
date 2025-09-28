@@ -1,41 +1,55 @@
 <template>
   <div class="container">
     <v-img :width="200" :max-height="300" src="~/assets/icons/logo.svg" />
-    <v-sheet class="mx-auto" width="300">
-      <v-form fast-fail @submit.prevent="handleSubmit" class="bg-form">
+    <v-sheet class="mx-auto login-sheet" width="300" elevation="0" rounded="0">
+      <v-form fast-fail @submit.prevent="handleSubmit">
         <v-text-field
           variant="solo-filled"
           v-model="email"
           :rules="emailRules"
           label="Email"
+          density="comfortable"
+          hide-details="auto"
           required
-        ></v-text-field>
-
+        />
         <v-text-field
           variant="solo-filled"
           v-model="password"
           :rules="passwordRules"
           type="password"
           label="Senha"
+          class="mt-4"
+          density="comfortable"
+          hide-details="auto"
           required
-        ></v-text-field>
+        />
+        <v-btn class="mt-4" type="submit" color="primary" :loading="loading" block>
+          Entrar
+        </v-btn>
 
-        <v-btn class="mt-2" type="submit" :loading="loading" block
-          >Entrar</v-btn
+        <v-alert
+          v-if="error"
+          type="error"
+          class="mt-3"
+          density="comfortable"
+          variant="tonal"
         >
-
-        <v-alert v-if="error" type="error" class="mt-3">{{ error }}</v-alert>
+          {{ error }}
+        </v-alert>
       </v-form>
     </v-sheet>
   </div>
 </template>
+
+<script setup>
+definePageMeta({ layout: "auth", auth: false });
+</script>
 
 <script>
 import { useAuthStore } from "~/stores/auth";
 
 export default {
   name: "LoginPage",
-  layout: "auth",
   data() {
     return {
       password: "",
@@ -106,10 +120,15 @@ export default {
   align-items: center;
   justify-content: center;
   height: 100vh;
-  background-color: var(--color-primary) !important;
+  position: relative;
+  overflow: hidden;
+  background: none !important;
 }
-.bg-form {
-  background-color: var(--color-primary);
-  padding: 20px;
+
+.login-sheet {
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0;
 }
+
 </style>

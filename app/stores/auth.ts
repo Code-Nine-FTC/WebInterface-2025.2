@@ -5,9 +5,15 @@ export const useAuthStore = defineStore("auth", () => {
   const user = ref<any | null>(null);
   const token = ref<string | null>(null);
   const loading = ref(false);
+  const email = ref<string | null>(null);
+  const role = ref<string | null>(null);
 
-  const cookie = useCookie("token");
-  const apiBase = useRuntimeConfig().public.apiBase || "";
+  const cookie = useCookie("token", {
+    path: "/",
+    maxAge: 60 * 60 * 12,
+    sameSite: "lax",
+  });
+  const apiBase = useRuntimeConfig().public.apiBase || "http://localhost:8080";
 
   const isAuthenticated = computed(() => !!(token.value || cookie.value));
 
@@ -15,17 +21,32 @@ export const useAuthStore = defineStore("auth", () => {
     token.value = cookie.value || null;
   }
 
+  async function initializeAuth() {
+    if ((cookie.value || token.value) && !user.value) {
+      console.log("Initializing auth from cookie/token");
+      token.value = token.value ?? cookie.value ?? null;
+      try {
+        await fetchUser();
+      } catch (e) {
+        console.error("Failed to initialize user from token:", e);
+        logout();
+      }
+    }
+  }
+
   async function login(payload: Record<string, any>) {
     loading.value = true;
     try {
-      const res: any = await $fetch("/login", {
-        baseURL: apiBase,
-        method: "POST",
-        body: payload,
-      });
+      const { $api } = useNuxtApp();
+      const res: any = await $api("/login", { method: "POST", body: payload });
       token.value = res.token;
-      user.value = res.user ?? null;
       cookie.value = res.token;
+      user.value = {
+        name: res.name,
+        email: res.email,
+        role: res.role,
+        sections: res.sections,
+      };
       return res;
     } finally {
       loading.value = false;
@@ -52,6 +73,8 @@ export const useAuthStore = defineStore("auth", () => {
   function logout() {
     user.value = null;
     token.value = null;
+    email.value = null;
+    role.value = null;
     cookie.value = null;
     return navigateTo("/login");
   }
@@ -60,8 +83,11 @@ export const useAuthStore = defineStore("auth", () => {
     user,
     token,
     loading,
+    email,
+    role,
     isAuthenticated,
     setTokenFromCookie,
+    initializeAuth,
     login,
     fetchUser,
     logout,

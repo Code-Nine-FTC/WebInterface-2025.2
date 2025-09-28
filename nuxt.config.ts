@@ -39,11 +39,6 @@ export default defineNuxtConfig({
     },
   },
 
-  // Configuração de Layouts
-  dir: {
-    layouts: "app/layouts",
-  },
-
   // Modules
   modules: ["vuetify-nuxt-module", "@pinia/nuxt", "@nuxtjs/tailwindcss"],
 
