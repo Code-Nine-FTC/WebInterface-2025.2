@@ -43,7 +43,7 @@
       </v-card>
     </div>
 
-    <v-card class="bg-white rounded-lg shadow-md pa-4 mb-6">
+  <v-card class="bg-white rounded-lg shadow-md pa-4 mb-6">
       <div class="px-4 py-3 border-b border-slate-100">
         <div class="d-flex items-center gap-2 text-xs text-slate-500">
           <v-icon icon="mdi-account-multiple" class="mr-1" />
@@ -66,7 +66,7 @@
               variant="text"
               color="primary"
               :loading="loading"
-              @click="fetchData"
+              @click="fetchAll"
             >
               Atualizar
             </v-btn>
@@ -75,6 +75,17 @@
       </div>
 
       <div class="p-4">
+        <!-- Filtros por status -->
+        <div class="mb-3">
+          <v-chip-group v-model="activeStatus" mandatory class="flex-wrap" selected-class="text-white">
+            <v-chip value="ALL" size="small" variant="tonal">Todos</v-chip>
+            <v-chip value="PENDING" size="small" color="blue" variant="tonal">Pendente</v-chip>
+            <v-chip value="APPROVED" size="small" color="green" variant="tonal">Aprovado</v-chip>
+            <v-chip value="PROCESSING" size="small" color="indigo" variant="tonal">Processando</v-chip>
+            <v-chip value="COMPLETED" size="small" color="purple" variant="tonal">Concluído</v-chip>
+            <v-chip value="CANCELLED" size="small" color="red" variant="tonal">Cancelado</v-chip>
+          </v-chip-group>
+        </div>
         <div class="overflow-auto">
           <v-data-table
             :headers="headers"
@@ -89,41 +100,29 @@
               }}</span>
             </template>
 
-            <template v-slot:item.cnpj="{ item }">
-              <span class="text-sm text-slate-700">{{
-                formatCNPJ(item.cnpj)
-              }}</span>
+            <template v-slot:item.withdrawDay="{ item }">
+              <span class="text-sm text-slate-700">
+                {{ normalizeStatusKey(item.status) === 'COMPLETED' ? formatDate(item.withdrawDay) : '—' }}
+              </span>
             </template>
-            <template v-slot:item.phoneNumber="{ item }">
-              <span class="text-sm text-slate-700">{{
-                formatTelefone(item.phoneNumber)
-              }}</span>
+
+            <template v-slot:item.status="{ item }">
+              <v-chip :color="statusColor(item.status)" size="small" label class="text-white font-medium">
+                {{ statusLabel(item.status) }}
+              </v-chip>
             </template>
 
             <template v-slot:item.actions="{ item }">
               <div class="d-flex flex-row gap-1">
-                <v-tooltip text="Editar" location="top">
+                <v-tooltip text="Ver" location="top">
                   <template #activator="{ props }">
                     <v-btn
                       v-bind="props"
                       size="small"
-                      icon="mdi-pencil"
+                      icon="mdi-eye"
                       variant="text"
                       color="primary"
-                      @click="editSupplier(item)"
-                    />
-                  </template>
-                </v-tooltip>
-
-                <v-tooltip text="Remover" location="top">
-                  <template #activator="{ props }">
-                    <v-btn
-                      v-bind="props"
-                      size="small"
-                      icon="mdi-delete"
-                      variant="text"
-                      color="red"
-                      @click="removeSupplier(item)"
+                      @click="viewOrder(item)"
                     />
                   </template>
                 </v-tooltip>
@@ -133,6 +132,7 @@
         </div>
       </div>
     </v-card>
+  <OrdersFormSidebar @created="handleOrderCreated" @updated="handleOrderUpdated" />
   </div>
 </template>
 
@@ -144,7 +144,10 @@ definePageMeta({ layout: "default", middleware: "auth" });
 import { useAuthStore } from "~/stores/auth";
 import { useSupplier } from "~/stores/supplier";
 import { useStorage } from "~/stores/storage";
-import { formatCNPJ, formatDate } from "~/utils";
+import { useSidebarStore } from "~/stores/sidebar";
+import { useOrders } from "~/stores/orders";
+import OrdersFormSidebar from "~/components/sidebars/orders.vue";
+import { formatDate } from "~/utils";
 
 export default {
   data() {
@@ -152,10 +155,16 @@ export default {
       auth: null,
       supplierStore: null,
       storageStore: null,
-      suppliersLoading: false,
+      sidebar: null,
+  suppliersLoading: false,
       itemsLoading: false,
       suppliers: [],
       items: [],
+      search: "",
+      loading: false,
+      lastUpdated: Date.now(),
+  orders: [],
+    activeStatus: 'ALL',
       kpis: [
         {
           key: "items",
@@ -187,21 +196,53 @@ export default {
         },
       ],
       headers: [
-        { title: "Fornecedor", key: "name" },
-        { title: "CNPJ", key: "cnpj" },
-        { title: "Telefone", key: "phoneNumber" },
+        { title: "Código", key: "id", width: 100 },
+        { title: "Retirada", key: "withdrawDay" },
+        { title: "Status", key: "status", width: 120 },
         { title: "Última atualização", key: "lastUpdate" },
         { title: "Ações", key: "actions", sortable: false, width: 100 },
       ]
     };
   },
   computed: {
+    filteredData() {
+      const q = (this.search || "").toLowerCase().trim();
+      const data = (this.orders || []).map((o) => {
+        const itemsCount =
+          // valores numéricos diretos
+          (typeof o.itemsCount === 'number' ? o.itemsCount :
+          typeof o.items_count === 'number' ? o.items_count :
+          typeof o.itensCount === 'number' ? o.itensCount : null)
+          ??
+          // arrays comuns
+          (Array.isArray(o.items) ? o.items.length :
+          Array.isArray(o.itens) ? o.itens.length :
+          Array.isArray(o.itemIds) ? o.itemIds.length : null)
+          ??
+          // objeto de quantidades (conta itens distintos)
+          (o.itemQuantities && typeof o.itemQuantities === 'object' ? Object.keys(o.itemQuantities).length : 0);
+        const statusKey = this.normalizeStatusKey(o.status);
+        return {
+          ...o,
+          itemsCount,
+          status: o.status || "pendente",
+          statusKey,
+          lastUpdate: o.updatedAt || o.createdAt || o.lastUpdate,
+        };
+      });
+      const byStatus = this.activeStatus === 'ALL' ? data : data.filter((o) => o.statusKey === this.activeStatus);
+      if (!q) return byStatus;
+      return byStatus.filter((o) => [
+          String(o.id),
+          o.status,
+          this.statusLabel(o.status),
+          o.withdrawDay && new Date(o.withdrawDay).toLocaleDateString("pt-BR")
+        ]
+        .filter(Boolean)
+        .some((v) => String(v).toLowerCase().includes(q)));
+    },
     userRole() {
       return this.auth?.user?.role;
-    },
-    quickActions() {
-      const actions = [];
-      const sidebar = useSidebarStore?.();
     },
     lastSuppliers() {
       return [...this.suppliers]
@@ -231,25 +272,53 @@ export default {
     this.auth = useAuthStore();
     this.supplierStore = useSupplier();
     this.storageStore = useStorage();
+    this.sidebar = useSidebarStore();
+    this.ordersStore = useOrders();
     await this.fetchAll();
   },
   methods: {
-    formatCNPJ,
     formatDate,
+    normalizeStatusKey(s) {
+      const x = String(s || '').toUpperCase();
+      if (["PENDENTE"].includes(x)) return 'PENDING';
+      if (["APROVADO", "APPROVED"].includes(x)) return 'APPROVED';
+      if (["PROCESSANDO", "PROCESSING"].includes(x)) return 'PROCESSING';
+      if (["CONCLUIDO", "CONCLUÍDO", "COMPLETED"].includes(x)) return 'COMPLETED';
+      if (["CANCELADO", "CANCELLED"].includes(x)) return 'CANCELLED';
+      if (["PENDING"].includes(x)) return 'PENDING';
+      return 'PENDING';
+    },
+    statusLabel(s) {
+      const key = this.normalizeStatusKey(s);
+      const map = { PENDING: "Pendente", APPROVED: "Aprovado", PROCESSING: "Processando", COMPLETED: "Concluído", CANCELLED: "Cancelado" };
+      return map[key] || s || "—";
+    },
+    statusColor(s) {
+      const key = this.normalizeStatusKey(s);
+      if (key === 'APPROVED' || key === 'COMPLETED') return 'green';
+      if (key === 'CANCELLED') return 'red';
+      if (key === 'PROCESSING') return 'indigo';
+      return 'blue';
+    },
     async fetchAll() {
+      this.loading = true;
       this.suppliersLoading = true;
       this.itemsLoading = true;
       try {
-        const [suppliers, items] = await Promise.all([
+        const [suppliers, items, orders] = await Promise.all([
           this.supplierStore.list().catch(() => []),
           this.storageStore.list().catch(() => []),
+          this.ordersStore.list().catch(() => []),
         ]);
         this.suppliers = suppliers;
         this.items = items;
+        this.orders = orders;
         this.updateKpis();
+        this.lastUpdated = Date.now();
       } finally {
         this.suppliersLoading = false;
         this.itemsLoading = false;
+        this.loading = false;
       }
     },
     updateKpis() {
@@ -265,6 +334,22 @@ export default {
         value: map[k.key] ?? 0,
         loading: false,
       }));
+    },
+    openSidebar() {
+      this.sidebar?.open({ mode: "create" });
+    },
+    async handleOrderCreated() {
+      // Após criar, recarrega a listagem do backend (mobile-equivalente)
+      await this.fetchAll();
+    },
+    handleOrderUpdated(p) {
+      if (!p?.id) return;
+      this.orders = (this.orders || []).map((o) => o.id === p.id ? { ...o, ...p } : o);
+      this.lastUpdated = Date.now();
+    },
+    viewOrder(item) {
+      const id = item?.id ?? item
+      this.sidebar?.open({ mode: "view", orderId: id });
     },
   },
 };

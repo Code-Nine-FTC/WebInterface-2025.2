@@ -49,10 +49,20 @@ export const useSupplier = defineStore("supplier", () => {
     }
   }
 
+  async function getById(id: string | number) {
+    try {
+      return await $api(`/suppliers/${id}`);
+    } catch (e) {
+      console.error("Failed to get supplier:", e);
+      return null;
+    }
+  }
+
   return {
     list,
     create,
     remove,
     update,
+    getById,
   };
 });
