@@ -35,7 +35,6 @@ export const useOrders = defineStore("orders", () => {
         method: "POST",
         body: payload,
       });
-      // Backend pode não retornar JSON no 200; siga o padrão do mobile
       if (res && typeof res === "object") return res;
       return null;
     } catch (e) {
@@ -62,7 +61,6 @@ export const useOrders = defineStore("orders", () => {
         method: "PUT",
         body: { status },
       });
-      // Backend pode retornar vazio/texto; padroniza retorno como objeto similar ao mobile
       if (res && typeof res === "object") return res;
       const now = new Date().toISOString();
       return {
