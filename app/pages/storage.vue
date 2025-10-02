@@ -3,9 +3,7 @@
     <v-card class="bg-white rounded-lg shadow-md pa-4 mb-6">
       <div>
         <div class="d-flex flex-row items-center gap-3">
-          <v-chip v-if="userRole === 'ADMIN'" variant="elevated" color="purple">
-            Stock Geral
-          </v-chip>
+          <v-chip v-if="userRole === 'ADMIN'" variant="elevated" color="purple">Stock Geral</v-chip>
           <v-chip v-else variant="elevated" color="primary">
             {{ userSectionTitle }}
           </v-chip>
@@ -31,8 +29,9 @@
           class="flex-shrink-0 ml-2"
           height="38"
           @click="openSidebar"
-          >Cadastrar</v-btn
         >
+          Cadastrar
+        </v-btn>
         <v-btn
           prepend-icon="mdi-arrow-right"
           density="comfortable"
@@ -40,8 +39,9 @@
           class="flex-shrink-0 ml-2"
           height="38"
           @click="goToTypeItems"
-          >Tipos de Item</v-btn
         >
+          Tipos de Item
+        </v-btn>
       </div>
     </v-card>
 
@@ -49,18 +49,11 @@
       <div class="px-4 py-3 border-b border-slate-100">
         <div class="d-flex items-center gap-2 text-xs text-slate-500">
           <v-icon icon="mdi-warehouse" class="mr-1" />
-          <span> Estoque </span>
+          <span>Estoque</span>
 
           <div class="ml-auto flex items-center gap-2">
-            <span class="hidden sm:inline text-slate-500">
-              Última atualização:
-            </span>
-            <v-chip
-              color="green"
-              size="x-small"
-              variant="tonal"
-              class="font-medium"
-            >
+            <span class="hidden sm:inline text-slate-500">Última atualização:</span>
+            <v-chip color="green" size="x-small" variant="tonal" class="font-medium">
               {{ formatDate(Date.now()) }}
             </v-chip>
             <v-btn
@@ -102,15 +95,11 @@
               </div>
             </template>
             <template v-slot:item.expireDate="{ item }">
-              <span class="text-sm text-slate-700">{{
-                formatDate(item.expireDate)
-              }}</span>
+              <span class="text-sm text-slate-700">{{ formatDate(item.expireDate) }}</span>
             </template>
 
             <template v-slot:item.lastUpdate="{ item }">
-              <span class="text-sm text-slate-700">{{
-                formatDate(item.lastUpdate)
-              }}</span>
+              <span class="text-sm text-slate-700">{{ formatDate(item.lastUpdate) }}</span>
             </template>
           </v-data-table>
         </div>
@@ -121,35 +110,35 @@
 </template>
 
 <script setup>
-definePageMeta({ layout: "default" });
+definePageMeta({ layout: 'default' });
 </script>
 
 <script>
-import { useAuthStore } from "~/stores/auth";
-import { useStorage } from "~/stores/storage";
-import StorageItemSidebar from "~/components/sidebars/storage-item.vue";
-import { useSidebarStore } from "~/stores/sidebar";
+import { useAuthStore } from '~/stores/auth';
+import { useStorage } from '~/stores/storage';
+import StorageItemSidebar from '~/components/sidebars/storage-item.vue';
+import { useSidebarStore } from '~/stores/sidebar';
 
 export default {
-  name: "Storage",
-  layout: "default",
+  name: 'Storage',
+  layout: 'default',
   data() {
     return {
       data: [],
       auth: null,
       loading: false,
-      search: "",
+      search: '',
       headers: [
-        { title: "Nome", key: "name" },
-        { title: "Tipo", key: "itemTypeName" },
-        { title: "Estoque", key: "currentStock" },
-        { title: "Unidade", key: "measure" },
-        { title: "Validade", key: "expireDate" },
-        { title: "Fornecedor", key: "supplierName" },
-        { title: "Seção", key: "sectionName" },
-        { title: "Stock Mínimo", key: "minimumStock" },
-        { title: "Última atualização", key: "lastUpdate" },
-        { title: "Ações", key: "actions", sortable: false, width: 110 },
+        { title: 'Nome', key: 'name' },
+        { title: 'Tipo', key: 'itemTypeName' },
+        { title: 'Estoque', key: 'currentStock' },
+        { title: 'Unidade', key: 'measure' },
+        { title: 'Validade', key: 'expireDate' },
+        { title: 'Último usuário', key: 'lastUserName' },
+        { title: 'Seção', key: 'sectionName' },
+        { title: 'Stock Mínimo', key: 'minimumStock' },
+        { title: 'Última atualização', key: 'lastUpdate' },
+        { title: 'Ações', key: 'actions', sortable: false, width: 110 },
         // { title: "QR", key: "qrCode" },
       ],
       sidebar: null,
@@ -161,53 +150,49 @@ export default {
     this.sidebar = useSidebarStore();
   },
   async mounted() {
-    if (this.auth && typeof this.auth.initializeAuth === "function") {
+    if (this.auth && typeof this.auth.initializeAuth === 'function') {
       try {
         await this.auth.initializeAuth();
       } catch (e) {
-        console.warn("initializeAuth falhou:", e);
+        console.warn('initializeAuth falhou:', e);
       }
     }
     await this.fetchData();
   },
   computed: {
     filteredData() {
-      const q = (this.search || "").toString().toLowerCase().trim();
+      const q = (this.search || '').toString().toLowerCase().trim();
       if (!q) return this.data;
       return this.data.filter((item) => {
         return [
-          "name",
-          "qrCode",
-          "supplierName",
-          "sectionName",
-          "itemTypeName",
-          "lastUserName",
-          "itemId",
+          'name',
+          'qrCode',
+          'supplierName',
+          'sectionName',
+          'itemTypeName',
+          'lastUserName',
+          'itemId',
         ].some((key) => {
           const v = item?.[key];
-          return (
-            v !== undefined &&
-            v !== null &&
-            v.toString().toLowerCase().includes(q)
-          );
+          return v !== undefined && v !== null && v.toString().toLowerCase().includes(q);
         });
       });
     },
     userName() {
-      return this.auth?.user?.name || "Usuário";
+      return this.auth?.user?.name || 'Usuário';
     },
     userEmail() {
-      return this.auth?.user?.email || "—";
+      return this.auth?.user?.email || '—';
     },
     userSections() {
       return this.auth?.user?.sections || [];
     },
     userSectionTitle() {
       const sections = this.auth?.user?.sections || [];
-      return sections.length > 0 ? sections[0].title : "None";
+      return sections.length > 0 ? sections[0].title : 'None';
     },
     userRole() {
-      return this.auth?.user?.role || "DEFAULT";
+      return this.auth?.user?.role || 'DEFAULT';
     },
   },
   methods: {
@@ -217,45 +202,43 @@ export default {
     async fetchData() {
       this.loading = true;
       try {
-        if (this.userRole === "ADMIN") {
+        if (this.userRole === 'ADMIN') {
           this.data = await this.storage.list();
         } else {
-          const sectionId = this.userSections.length
-            ? this.userSections[0].id
-            : null;
+          const sectionId = this.userSections.length ? this.userSections[0].id : null;
           this.data = await this.storage.list(sectionId ? { sectionId } : {});
         }
         this.loading = false;
       } catch (e) {
-        console.error("Error fetching data:", e);
+        console.error('Error fetching data:', e);
       }
     },
     formatDate(value) {
-      if (!value) return "—";
+      if (!value) return '—';
       try {
         const d = new Date(value);
-        return d.toLocaleString("pt-BR", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
+        return d.toLocaleString('pt-BR', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
         });
       } catch {
         return value;
       }
     },
     openSidebar() {
-      this.sidebar?.open({ mode: "edit-item" });
+      this.sidebar?.open({ mode: 'edit-item' });
     },
     editItem(item) {
       const raw = item?.raw ?? item;
       const id = raw?.itemId ?? raw?.id;
       if (!id) return;
-      this.sidebar?.open({ mode: "edit-item", itemId: id });
+      this.sidebar?.open({ mode: 'edit-item', itemId: id });
     },
     goToTypeItems() {
-      this.$router.push({ path: "/typeitems" });
+      this.$router.push({ path: '/typeitems' });
     },
   },
 };

@@ -15,7 +15,7 @@
           <v-icon :icon="k.icon" size="20" class="text-medium-emphasis" />
         </div>
         <div class="kpi-value">
-          {{ k.loading ? "…" : k.value }}
+          {{ k.loading ? '…' : k.value }}
         </div>
       </v-card>
     </div>
@@ -43,22 +43,14 @@
     </v-card>
 
     <!-- Itens críticos -->
-    <v-card
-      v-if="criticalItems.length"
-      class="section-card pa-5 critical-card mb-4"
-      elevation="2"
-    >
+    <v-card v-if="criticalItems.length" class="section-card pa-5 critical-card mb-4" elevation="2">
       <div class="d-flex align-center mb-4">
         <v-icon icon="mdi-alert" color="red" class="mr-2" />
         <span class="text-subtitle-2 font-semibold">Itens Críticos</span>
         <v-spacer />
-        <v-chip
-          size="x-small"
-          color="red"
-          variant="tonal"
-          class="font-medium"
-          >{{ criticalItems.length }}</v-chip
-        >
+        <v-chip size="x-small" color="red" variant="tonal" class="font-medium">
+          {{ criticalItems.length }}
+        </v-chip>
       </div>
       <v-table density="compact" class="table-flat">
         <thead>
@@ -70,9 +62,9 @@
         </thead>
         <tbody>
           <tr v-for="it in criticalItems" :key="it.id">
-            <td>{{ it.name || it.descricao || "#" + it.id }}</td>
-            <td>{{ it.currentStock ?? it.qtd ?? "-" }}</td>
-            <td>{{ it.minimumStock ?? it.min ?? "-" }}</td>
+            <td>{{ it.name || it.descricao || '#' + it.id }}</td>
+            <td>{{ it.currentStock ?? it.qtd ?? '-' }}</td>
+            <td>{{ it.minimumStock ?? it.min ?? '-' }}</td>
           </tr>
         </tbody>
       </v-table>
@@ -84,13 +76,9 @@
         <v-icon icon="mdi-account-multiple" class="mr-2" />
         <span class="text-subtitle-2 font-semibold">Últimos Fornecedores</span>
         <v-spacer />
-        <v-btn
-          size="x-small"
-          variant="text"
-          color="primary"
-          @click="$router.push('/suppliers')"
-          >Ver todos</v-btn
-        >
+        <v-btn size="x-small" variant="text" color="primary" @click="$router.push('/suppliers')">
+          Ver todos
+        </v-btn>
       </div>
 
       <v-data-table
@@ -103,7 +91,7 @@
         hide-default-footer
       >
         <template #item.cnpj="{ item }">
-          {{ formatCNPJ(item.cnpj || "") }}
+          {{ formatCNPJ(item.cnpj || '') }}
         </template>
 
         <template #item.lastUpdate="{ item }">
@@ -111,15 +99,11 @@
         </template>
 
         <template #loading>
-          <div class="py-6 text-center text-medium-emphasis text-caption">
-            Carregando...
-          </div>
+          <div class="py-6 text-center text-medium-emphasis text-caption">Carregando...</div>
         </template>
 
         <template #no-data>
-          <div class="py-6 text-center text-medium-emphasis text-caption">
-            Nenhum fornecedor
-          </div>
+          <div class="py-6 text-center text-medium-emphasis text-caption">Nenhum fornecedor</div>
         </template>
       </v-data-table>
     </v-card>
@@ -127,17 +111,17 @@
 </template>
 
 <script setup>
-definePageMeta({ layout: "default", middleware: "auth" });
+definePageMeta({ layout: 'default', middleware: 'auth' });
 </script>
 
 <script>
-import { useAuthStore } from "~/stores/auth";
-import { useSupplier } from "~/stores/supplier";
-import { useStorage } from "~/stores/storage";
-import { formatCNPJ, formatDate } from "~/utils";
+import { useAuthStore } from '~/stores/auth';
+import { useSupplier } from '~/stores/supplier';
+import { useStorage } from '~/stores/storage';
+import { formatCNPJ, formatDate } from '~/utils';
 
 export default {
-  name: "home",
+  name: 'home',
   data() {
     return {
       auth: null,
@@ -149,38 +133,38 @@ export default {
       items: [],
       kpis: [
         {
-          key: "items",
-          label: "Itens",
-          icon: "mdi-package-variant",
+          key: 'items',
+          label: 'Itens',
+          icon: 'mdi-package-variant',
           value: 0,
           loading: true,
         },
         {
-          key: "crit",
-          label: "Críticos",
-          icon: "mdi-alert-circle",
+          key: 'crit',
+          label: 'Críticos',
+          icon: 'mdi-alert-circle',
           value: 0,
           loading: true,
         },
         {
-          key: "suppliers",
-          label: "Fornecedores",
-          icon: "mdi-domain",
+          key: 'suppliers',
+          label: 'Fornecedores',
+          icon: 'mdi-domain',
           value: 0,
           loading: true,
         },
         {
-          key: "sections",
-          label: "Seções",
-          icon: "mdi-view-grid",
+          key: 'sections',
+          label: 'Seções',
+          icon: 'mdi-view-grid',
           value: 0,
           loading: true,
         },
       ],
       lastSupplierHeaders: [
-        { title: "Nome", key: "name" },
-        { title: "CNPJ", key: "cnpj" },
-        { title: "Última Atualização", key: "lastUpdate" },
+        { title: 'Nome', key: 'name' },
+        { title: 'CNPJ', key: 'cnpj' },
+        { title: 'Última Atualização', key: 'lastUpdate' },
       ],
     };
   },
@@ -192,28 +176,28 @@ export default {
       const actions = [];
       const sidebar = useSidebarStore?.();
 
-      if (["ADMIN", "MANAGER"].includes(this.userRole)) {
+      if (['ADMIN', 'MANAGER'].includes(this.userRole)) {
         actions.push(
           {
-            label: "Novo Fornecedor",
-            color: "teal",
-            run: () => this.$router.push("/suppliers"),
+            label: 'Novo Fornecedor',
+            color: 'teal',
+            run: () => this.$router.push('/suppliers'),
           },
           {
-            label: "Stock",
-            color: "indigo",
-            run: () => this.$router.push("/storage"),
+            label: 'Stock',
+            color: 'indigo',
+            run: () => this.$router.push('/storage'),
           },
           {
-            label: "Pedidos",
-            color: "primary",
-            run: () => this.$router.push("/orders"),
+            label: 'Pedidos',
+            color: 'primary',
+            run: () => this.$router.push('/orders'),
           },
           {
-            label: "Gerenciar Usuários",
-            color: "secondary",
-            run: () => this.$router.push("/users"),
-          }
+            label: 'Gerenciar Usuários',
+            color: 'secondary',
+            run: () => this.$router.push('/users'),
+          },
         );
         // Botão "Nova Seção" ocultado conforme solicitação
       }
@@ -221,15 +205,19 @@ export default {
     },
     lastSuppliers() {
       return [...this.suppliers]
+        .filter(
+          (s) =>
+            s.name !== 'Usuario de Migração' &&
+            s.nomeFantasia !== 'Usuario de Migração' &&
+            s.razaoSocial !== 'Usuario de Migração',
+        )
         .map((s) => ({
           ...s,
-          name: s.name || s.nomeFantasia || s.razaoSocial || "#" + s.id,
+          name: s.name || s.nomeFantasia || s.razaoSocial || '#' + s.id,
           lastUpdate: s.lastUpdate || s.updatedAt || s.createdAt || null,
         }))
         .sort(
-          (a, b) =>
-            new Date(b.lastUpdate || 0).getTime() -
-            new Date(a.lastUpdate || 0).getTime()
+          (a, b) => new Date(b.lastUpdate || 0).getTime() - new Date(a.lastUpdate || 0).getTime(),
         )
         .slice(0, 5);
     },
@@ -280,10 +268,7 @@ export default {
         ...k,
         value: map[k.key] ?? 0,
         loading: false,
-        helper:
-          k.key === "crit" && crit > 0
-            ? "Verifique níveis de estoque"
-            : undefined,
+        helper: k.key === 'crit' && crit > 0 ? 'Verifique níveis de estoque' : undefined,
       }));
     },
   },
