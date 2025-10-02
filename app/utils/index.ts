@@ -72,5 +72,5 @@ export default {
   formatDate,
   roleColor,
   roleName,
-  getInitials
+  getInitials,
 };

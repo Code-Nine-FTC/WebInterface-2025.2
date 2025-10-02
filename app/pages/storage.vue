@@ -31,7 +31,8 @@
           class="flex-shrink-0 ml-2"
           height="38"
           @click="openSidebar"
-        >Cadastrar</v-btn>
+          >Cadastrar</v-btn
+        >
         <v-btn
           prepend-icon="mdi-arrow-right"
           density="comfortable"
@@ -39,7 +40,8 @@
           class="flex-shrink-0 ml-2"
           height="38"
           @click="goToTypeItems"
-        >Tipos de Item</v-btn>
+          >Tipos de Item</v-btn
+        >
       </div>
     </v-card>
 
@@ -209,7 +211,9 @@ export default {
     },
   },
   methods: {
-    onItemUpdated() { this.fetchData(); },
+    onItemUpdated() {
+      this.fetchData();
+    },
     async fetchData() {
       this.loading = true;
       try {
@@ -248,10 +252,10 @@ export default {
       const raw = item?.raw ?? item;
       const id = raw?.itemId ?? raw?.id;
       if (!id) return;
-      this.sidebar?.open({ mode: 'edit-item', itemId: id });
+      this.sidebar?.open({ mode: "edit-item", itemId: id });
     },
     goToTypeItems() {
-      this.$router.push({ path: '/typeitems' });
+      this.$router.push({ path: "/typeitems" });
     },
   },
 };
