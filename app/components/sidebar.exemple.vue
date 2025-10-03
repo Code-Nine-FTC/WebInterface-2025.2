@@ -15,13 +15,18 @@
 
     <v-container>
       <v-text-field label="Nome" variant="outlined" class="mb-3" />
-      <v-text-field label="Estoque" variant="outlined" type="number" class="mb-3" />
+      <v-text-field
+        label="Estoque"
+        variant="outlined"
+        type="number"
+        class="mb-3"
+      />
       <v-btn color="primary" block>Salvar</v-btn>
     </v-container>
   </v-navigation-drawer>
 </template>
 
 <script setup lang="ts">
-import { useSidebarStore } from '~/stores/sidebar'
-const sidebar = useSidebarStore()
+import { useSidebarStore } from "~/stores/sidebar";
+const sidebar = useSidebarStore();
 </script>

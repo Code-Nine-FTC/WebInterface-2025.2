@@ -25,7 +25,8 @@
           class="flex-shrink-0 ml-2"
           height="38"
           @click="openSidebar"
-        >Cadastrar</v-btn>
+          >Cadastrar</v-btn
+        >
       </div>
     </v-card>
 
@@ -169,7 +170,7 @@ export default {
   computed: {
     filteredData() {
       const q = (this.search || "").toLowerCase().trim();
-      const data = this.data.filter(u => u.name !== "Usuario de Migração");
+      const data = this.data.filter((u) => u.name !== "Usuario de Migração");
       if (!q) return data;
       return data.filter((item) =>
         ["nomeFantasia", "razaoSocial", "email", "telefone", "cnpj"].some(
@@ -179,7 +180,7 @@ export default {
           }
         )
       );
-},
+    },
   },
   methods: {
     async fetchData() {

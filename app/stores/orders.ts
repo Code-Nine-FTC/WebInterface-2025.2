@@ -10,11 +10,14 @@ export const useOrders = defineStore("orders", () => {
       const res: any = await $api("/orders");
       if (Array.isArray(res)) {
         orders.value = res;
-      } else if (res && typeof res === 'object') {
-        const keys = ['content', 'orders', 'data', 'results', 'items'];
+      } else if (res && typeof res === "object") {
+        const keys = ["content", "orders", "data", "results", "items"];
         let found: any[] | null = null;
         for (const k of keys) {
-          if (Array.isArray(res[k])) { found = res[k]; break; }
+          if (Array.isArray(res[k])) {
+            found = res[k];
+            break;
+          }
         }
         if (found) orders.value = found;
         else if (res.id != null) orders.value = [res];
@@ -29,13 +32,15 @@ export const useOrders = defineStore("orders", () => {
     }
   }
 
-  async function create(payload: { withdrawDay: string; itemQuantities: Record<string, number> }) {
+  async function create(payload: {
+    withdrawDay: string;
+    itemQuantities: Record<string, number>;
+  }) {
     try {
       const res: any = await $api("/orders", {
         method: "POST",
         body: payload,
       });
-      // Backend pode não retornar JSON no 200; siga o padrão do mobile
       if (res && typeof res === "object") return res;
       return null;
     } catch (e) {
@@ -46,7 +51,7 @@ export const useOrders = defineStore("orders", () => {
 
   async function update(payload: Record<string, any>) {
     try {
-      return await $api(`/orders/${payload.id}` , {
+      return await $api(`/orders/${payload.id}`, {
         method: "PUT",
         body: payload,
       });
@@ -62,7 +67,6 @@ export const useOrders = defineStore("orders", () => {
         method: "PUT",
         body: { status },
       });
-      // Backend pode retornar vazio/texto; padroniza retorno como objeto similar ao mobile
       if (res && typeof res === "object") return res;
       const now = new Date().toISOString();
       return {
@@ -119,7 +123,7 @@ export const useOrders = defineStore("orders", () => {
 
   async function remove(payload: Record<string, any>) {
     try {
-      return await $api(`/orders/${payload.id}` , {
+      return await $api(`/orders/${payload.id}`, {
         method: "DELETE",
         body: payload,
       });

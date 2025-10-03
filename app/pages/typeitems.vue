@@ -2,9 +2,7 @@
   <div class="max-w-6xl mx-auto p-6">
     <v-card class="bg-white rounded-lg shadow-md pa-4 mb-6">
       <div class="d-flex flex-row items-center gap-3">
-        <v-chip variant="elevated" color="primary">
-          Tipos de Item
-        </v-chip>
+        <v-chip variant="elevated" color="primary"> Tipos de Item </v-chip>
       </div>
       <div class="d-flex flex-row items-center gap-2 mt-2">
         <v-text-field
@@ -24,7 +22,8 @@
           class="flex-shrink-0 ml-2"
           height="38"
           @click="openSidebar"
-        >Cadastrar</v-btn>
+          >Cadastrar</v-btn
+        >
       </div>
     </v-card>
 
@@ -72,15 +71,23 @@
               <span>{{ item.name }}</span>
             </template>
             <template v-slot:item.isActive="{ item }">
-              <v-chip :color="item.isActive ? 'green' : 'red'" size="x-small" variant="tonal">
-                {{ item.isActive ? 'Ativo' : 'Inativo' }}
+              <v-chip
+                :color="item.isActive ? 'green' : 'red'"
+                size="x-small"
+                variant="tonal"
+              >
+                {{ item.isActive ? "Ativo" : "Inativo" }}
               </v-chip>
             </template>
             <template v-slot:item.lastUpdate="{ item }">
-              <span class="text-sm text-slate-700">{{ formatDate(item.lastUpdate) }}</span>
+              <span class="text-sm text-slate-700">{{
+                formatDate(item.lastUpdate)
+              }}</span>
             </template>
             <template v-slot:item.lastUserName="{ item }">
-              <span class="text-sm text-slate-700">{{ item.lastUserName || '-' }}</span>
+              <span class="text-sm text-slate-700">{{
+                item.lastUserName || "-"
+              }}</span>
             </template>
             <template v-slot:item.actions="{ item }">
               <v-btn
@@ -110,7 +117,7 @@ import { useAuthStore } from "~/stores/auth";
 export default {
   name: "TypeItems",
   components: {
-    TypeItemSidebar
+    TypeItemSidebar,
   },
   data() {
     return {
@@ -123,7 +130,13 @@ export default {
         { title: "Status", key: "isActive" },
         { title: "Última atualização", key: "lastUpdate" },
         { title: "Usuário", key: "lastUserName" },
-        { title: "", key: "actions", sortable: false, align: "center", width: 60 },
+        {
+          title: "",
+          key: "actions",
+          sortable: false,
+          align: "center",
+          width: 60,
+        },
       ],
       sidebar: null,
     };
@@ -141,9 +154,9 @@ export default {
       const q = (this.search || "").toString().toLowerCase().trim();
       let items = this.data;
       const user = this.authStore?.user;
-      if (user && user.role !== 'ADMIN') {
-        const userSectionIds = (user.sections || []).map(s => s.id);
-        items = items.filter(item => userSectionIds.includes(item.sectionId));
+      if (user && user.role !== "ADMIN") {
+        const userSectionIds = (user.sections || []).map((s) => s.id);
+        items = items.filter((item) => userSectionIds.includes(item.sectionId));
       }
       if (!q) return items;
       return items.filter((item) => {
@@ -189,17 +202,17 @@ export default {
     },
     editTypeItem(event, row) {
       const item = row.item;
-      console.log('editTypeItem chamado:', item);
-      if (!item || typeof item !== 'object') return;
+      console.log("editTypeItem chamado:", item);
+      if (!item || typeof item !== "object") return;
       this.sidebar?.open({ mode: "edit", typeItemId: item.id });
     },
     async removeTypeItem(item) {
-      if (confirm('Tem certeza que deseja remover este tipo de item?')) {
+      if (confirm("Tem certeza que deseja remover este tipo de item?")) {
         try {
           await this.typeItemStore.remove(item);
           await this.fetchData();
         } catch (e) {
-          console.error('Erro ao remover tipo de item:', e);
+          console.error("Erro ao remover tipo de item:", e);
         }
       }
     },

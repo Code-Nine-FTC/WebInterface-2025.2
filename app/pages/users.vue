@@ -107,7 +107,7 @@ export default {
     filteredUsers() {
       const roleOrder = { ADMIN: 0, MANAGER: 1, ASSISTANT: 2 };
       const q = (this.search || "").toLowerCase().trim();
-      let users = this.data.filter(u => u.isActive !== false);
+      let users = this.data.filter((u) => u.isActive !== false);
       if (q) {
         users = users.filter((u) =>
           [u.username, u.email, u.name]

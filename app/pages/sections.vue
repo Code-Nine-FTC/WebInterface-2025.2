@@ -6,6 +6,4 @@
 definePageMeta({ layout: "default", middleware: "auth" });
 </script>
 
-<script>
-
-</script>
+<script></script>

@@ -39,6 +39,7 @@
             :title="item.title"
             :to="item.to"
             :value="item.value"
+            @click="setPageTitle(item.title)"
           />
         </v-list>
 
@@ -146,8 +147,11 @@ export default {
     this.updatePageTitle();
   },
   watch: {
-    $route() {
-      this.updatePageTitle();
+    $route: {
+      handler() {
+        this.updatePageTitle();
+      },
+      immediate: true,
     },
   },
   computed: {
@@ -173,12 +177,18 @@ export default {
     },
   },
   methods: {
+    setPageTitle(title) {
+      this.pageTitle = title;
+    },
     updatePageTitle() {
-      const currentMenuItem = this.menuItems.find(
-        (item) => item.to === this.$route.path
-      );
-      if (currentMenuItem) {
-        this.pageTitle = currentMenuItem.title;
+      // const sortedMenu = [...this.menuItems].sort(
+      //   (a, b) => b.to.length - a.to.length
+      // );
+      // const currentMenuItem = sortedMenu.find((item) =>
+      //   this.$route.path.startsWith(item.to)
+      // );
+      if (this.pageTitle) {
+        this.pageTitle = this.pageTitle;
       } else {
         this.pageTitle = "Home";
       }
