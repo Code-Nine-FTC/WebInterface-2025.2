@@ -18,8 +18,9 @@
         class="flex-shrink-0 ml-2"
         height="38"
         @click="openSidebar"
-        >Cadastrar</v-btn
       >
+        Cadastrar
+      </v-btn>
     </div>
   </v-card>
   <v-item-group>
@@ -35,13 +36,27 @@
               </v-col>
               <v-col cols="9">
                 <span>{{ user.username }}</span>
-                <v-chip
-                  size="small"
-                  label
-                  :color="roleColor(user.role)"
-                  class="text-white font-medium ml-2 mr-4"
-                  >{{ roleName(user.role) }}</v-chip
-                >
+                <v-row class="d-flex align-center" no-gutters>
+                  <v-chip
+                    size="small"
+                    label
+                    :color="roleColor(user.role)"
+                    class="text-white font-medium"
+                  >
+                    {{ roleName(user.role) }}
+                  </v-chip>
+                  <v-chip
+                    v-for="section in user.sections"
+                    :key="section.id"
+                    v-if="user.role !== 'ADMIN'"
+                    label
+                    :color="sectionColor(section.title)"
+                    size="small"
+                    class="text-white font-medium ml-2"
+                  >
+                    {{ section.title }}
+                  </v-chip>
+                </v-row>
                 <span class="text-subtitle text-grey">{{ user.email }}</span>
               </v-col>
             </v-row>
@@ -61,8 +76,9 @@
               prepend-icon="mdi-pencil"
               variant="tonal"
               @click="editUser(user)"
-              >Editar</v-btn
             >
+              Editar
+            </v-btn>
             <v-tooltip text="Remover" location="top">
               <template #activator="{ props }">
                 <v-btn
@@ -87,32 +103,30 @@
 </template>
 
 <script setup>
-definePageMeta({ layout: "default", middleware: "auth" });
+definePageMeta({ layout: 'default', middleware: 'auth' });
 </script>
 <script>
-import { useUsers } from "~/stores/users";
-import { useSidebarStore } from "~/stores/sidebar";
-import FormSidebar from "~/components/sidebars/users.vue";
+import { useUsers } from '~/stores/users';
+import { useSidebarStore } from '~/stores/sidebar';
+import FormSidebar from '~/components/sidebars/users.vue';
 export default {
-  name: "profileRegister",
-  layout: "default",
+  name: 'profileRegister',
+  layout: 'default',
   data() {
     return {
       data: [],
       list_users: [],
-      search: "",
+      search: '',
     };
   },
   computed: {
     filteredUsers() {
       const roleOrder = { ADMIN: 0, MANAGER: 1, ASSISTANT: 2 };
-      const q = (this.search || "").toLowerCase().trim();
+      const q = (this.search || '').toLowerCase().trim();
       let users = this.data.filter((u) => u.isActive !== false);
       if (q) {
         users = users.filter((u) =>
-          [u.username, u.email, u.name]
-            .filter(Boolean)
-            .some((v) => v.toLowerCase().includes(q))
+          [u.username, u.email, u.name].filter(Boolean).some((v) => v.toLowerCase().includes(q)),
         );
       }
       return users.slice().sort((a, b) => {
@@ -134,18 +148,18 @@ export default {
       try {
         this.data = await this.list_users.list(true);
       } catch (error) {
-        console.error("Error fetching users:", error);
+        console.error('Error fetching users:', error);
       }
     },
     openSidebar() {
-      this.sidebar?.open({ mode: "create" });
+      this.sidebar?.open({ mode: 'create' });
     },
     handleUserCreated() {
       this.fetchData();
     },
     editUser(item) {
-      console.log("Editing user:", item);
-      this.sidebar?.open({ mode: "edit", user: item });
+      console.log('Editing user:', item);
+      this.sidebar?.open({ mode: 'edit', user: item });
     },
     handleUserUpdated() {
       this.fetchData();
@@ -153,17 +167,17 @@ export default {
     async deleteUser(item) {
       if (!item || !item.id) return;
       try {
-        console.log("Deleting user:", item);
+        console.log('Deleting user:', item);
         await this.list_users.disable(item);
         this.fetchData();
       } catch (error) {
-        console.error("Error deleting user:", error);
-        alert("Ocorreu um erro ao excluir o usuário. Tente novamente.");
+        console.error('Error deleting user:', error);
+        alert('Ocorreu um erro ao excluir o usuário. Tente novamente.');
       }
     },
     confirmDeleteUser(user) {
       if (!user || !user.id) return;
-      const ok = confirm("Tem certeza que deseja remover este usuário?");
+      const ok = confirm('Tem certeza que deseja remover este usuário?');
       if (!ok) return;
       this.deleteUser(user);
     },
