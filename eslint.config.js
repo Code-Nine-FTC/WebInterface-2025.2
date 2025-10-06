@@ -23,15 +23,4 @@ export default [
       // Suas regras para Vue aqui
     },
   },
-  {
-    files: ['**/*.{js,jsx,ts,tsx}'],
-    ignores: ['node_modules', 'dist'],
-    languageOptions: {
-      ecmaVersion: 2022,
-      sourceType: 'module',
-    },
-    rules: {
-      // Suas regras JS/TS aqui
-    },
-  },
 ];

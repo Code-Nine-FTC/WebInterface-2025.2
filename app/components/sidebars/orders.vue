@@ -91,6 +91,33 @@
         </v-card>
       </v-dialog>
 
+      <v-dialog v-model="completeDialog" max-width="420">
+        <v-card>
+          <v-card-title class="text-subtitle-1">Concluir pedido?</v-card-title>
+          <v-card-text>
+            Selecione a data de conclusão do pedido:
+            <v-text-field
+              v-model="completeDate"
+              label="Data de conclusão"
+              type="date"
+              variant="outlined"
+              density="comfortable"
+              class="mt-2"
+            />
+            <div class="text-caption text-medium-emphasis mt-2">
+              Se não selecionar, será usada a data atual.
+            </div>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer />
+            <v-btn variant="text" @click="completeDialog = false">Voltar</v-btn>
+            <v-btn color="primary" :loading="loading" @click="confirmCompleteAction">
+              Confirmar
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+
       <!-- Snackbar de feedback -->
       <v-snackbar v-model="snack.show" :color="snack.color" timeout="2500">
         {{ snack.text }}
@@ -287,34 +314,9 @@ export default {
       supplierNames: [],
       selectedStatus: null,
       confirmCancel: false,
+      completeDialog: false,
       pendingNewStatus: null,
       snack: { show: false, color: 'success', text: '' },
-      statusOptions: [
-        {
-          value: 'APPROVED',
-          label: 'Aprovado',
-          icon: 'mdi-check-circle',
-          color: 'green',
-        },
-        {
-          value: 'PROCESSING',
-          label: 'Processando',
-          icon: 'mdi-cog',
-          color: 'blue',
-        },
-        {
-          value: 'COMPLETED',
-          label: 'Completo',
-          icon: 'mdi-check-all',
-          color: 'purple',
-        },
-        {
-          value: 'CANCELLED',
-          label: 'Cancelado',
-          icon: 'mdi-cancel',
-          color: 'red',
-        },
-      ],
       form: {
         supplierId: null,
         items: [],
@@ -323,8 +325,31 @@ export default {
         itemId: null,
         qtd: 1,
       },
+      completeDate: null,
       suppliers: [],
       items: [],
+      ORDER_STATUS: {
+        APPROVED: {
+          label: 'Aprovado',
+          color: 'green',
+          icon: 'mdi-check-circle',
+          next: ['PROCESSING', 'CANCELLED'],
+        },
+        PROCESSING: {
+          label: 'Processando',
+          color: 'blue',
+          icon: 'mdi-cog',
+          next: ['COMPLETED', 'CANCELLED'],
+        },
+        COMPLETED: { label: 'Concluído', color: 'purple', icon: 'mdi-check-all', next: [] },
+        CANCELLED: { label: 'Cancelado', color: 'red', icon: 'mdi-cancel', next: [] },
+        PENDING: {
+          label: 'Pendente',
+          color: 'grey',
+          icon: 'mdi-timer-sand',
+          next: ['APPROVED', 'PROCESSING', 'CANCELLED'],
+        },
+      },
       rules: {
         required: (v) => !!v || v === 0 || 'Obrigatório',
         intQty: (v) => {
@@ -341,37 +366,23 @@ export default {
     isView() {
       return this.sidebar?.payload?.mode === 'view';
     },
-    currentStatusUpper() {
-      return this.normalizeStatusKey(this.orderDetails?.status || 'PENDING');
+    currentStatus() {
+      return this.normalizeStatusKey(this.orderDetails?.status);
+    },
+    statusMeta() {
+      return this.ORDER_STATUS[this.currentStatus] || this.ORDER_STATUS.PENDING;
     },
     isTerminalStatus() {
-      return this.currentStatusUpper === 'COMPLETED' || this.currentStatusUpper === 'CANCELLED';
+      return ['COMPLETED', 'CANCELLED'].includes(this.currentStatus);
     },
-    supplierOptions() {
-      return (this.suppliers || [])
-        .filter((s) => (s.name || s.nomeFantasia || '') !== 'Usuario de Migração')
-        .map((s) => ({
-          id: s.id,
-          label: s.name || s.nomeFantasia || s.razaoSocial || `#${s.id}`,
-        }));
-    },
-    itemOptions() {
-      return (this.items || []).map((it) => ({
-        id: it.itemId ?? it.id,
-        label: `${it.name || it.itemName || `#${it.itemId || it.id}`} • ${
-          it.measure || it.unit || 'un'
-        } • stock: ${it.currentStock ?? it.qtd ?? '?'}`,
+    statusOptions() {
+      const opts = [this.currentStatus, ...(this.statusMeta.next || [])];
+      return opts.map((key) => ({
+        value: key,
+        label: this.ORDER_STATUS[key].label,
+        icon: this.ORDER_STATUS[key].icon,
+        color: this.ORDER_STATUS[key].color,
       }));
-    },
-    canAddPick() {
-      return !!(this.pick.itemId && Number.isInteger(this.pick.qtd) && this.pick.qtd > 0);
-    },
-    canSubmit() {
-      // Fornecedor é opcional; só validamos itens com quantidades inteiras > 0
-      return (
-        this.form.items.length > 0 &&
-        this.form.items.every((i) => Number.isInteger(i.qtd) && i.qtd > 0)
-      );
     },
     orderDetailsItems() {
       // Prioriza a lista vinda de /orders/items/:id
@@ -388,7 +399,6 @@ export default {
           };
         });
       }
-      // Fallback: derivar de orderDetails.itemQuantities
       if (this.orderDetails?.itemQuantities) {
         return Object.entries(this.orderDetails.itemQuantities).map(([k, v]) => {
           const itemId = Number(k);
@@ -420,118 +430,45 @@ export default {
     'sidebar.payload': {
       deep: true,
       async handler(val) {
-        if (val?.mode === 'view' && val.orderId != null) {
-          try {
-            this.loading = true;
-            const data = await this.ordersStore.getById(val.orderId);
-            this.orderDetails = data || null;
-            // Busca itens do pedido, como no mobile
-            this.orderItems = await this.ordersStore.getItemsByOrderId(val.orderId);
-            // Busca nomes de fornecedores, se existir supplierIds no pedido
-            const supplierIds = Array.isArray(this.orderDetails?.supplierIds)
-              ? this.orderDetails.supplierIds
-              : [];
-            const names = [];
-            for (const sid of supplierIds) {
-              try {
-                const s = await this.supplierStore.getById(sid);
-                let name = null;
-                if (s && typeof s === 'object') {
-                  if (s.name && String(s.name).trim()) name = String(s.name);
-                  else if (s.nomeFantasia && String(s.nomeFantasia).trim())
-                    name = String(s.nomeFantasia);
-                  else if (s.razaoSocial && String(s.razaoSocial).trim())
-                    name = String(s.razaoSocial);
-                }
-                names.push(name || `Fornecedor não encontrado (ID ${sid})`);
-              } catch {
-                names.push(`Fornecedor não encontrado (ID ${sid})`);
-              }
-            }
-            this.supplierNames = names;
-            // Ajusta toggle conforme status atual
-            const cur = this.currentStatusUpper;
-            const exists = this.statusOptions.some((o) => o.value === cur);
-            this.selectedStatus = exists ? cur : null;
-          } catch (e) {
-            this.orderDetails = null;
-            this.orderItems = [];
-            this.supplierNames = [];
-            this.selectedStatus = null;
-          } finally {
-            this.loading = false;
-          }
-        }
+        if (!this.sidebar.isOpen) return;
+        await this.loadOrderDetails(val);
       },
     },
   },
   methods: {
     normalizeStatusKey(s) {
-      const x = String(s || '').toUpperCase();
-      if (['PENDENTE', 'PENDING'].includes(x)) return 'PENDING';
-      if (['APROVADO', 'APPROVED'].includes(x)) return 'APPROVED';
-      if (['PROCESSANDO', 'PROCESSING'].includes(x)) return 'PROCESSING';
-      if (['CONCLUIDO', 'CONCLUÍDO', 'COMPLETED'].includes(x)) return 'COMPLETED';
-      if (['CANCELADO', 'CANCELLED'].includes(x)) return 'CANCELLED';
-      return 'PENDING';
+      return typeof s === 'string' && this.ORDER_STATUS[s.toUpperCase()]
+        ? s.toUpperCase()
+        : 'PENDING';
     },
-    allowedNext(cur) {
-      // Define transições válidas a partir do estado atual
-      switch (cur) {
-        case 'PENDING':
-          return ['APPROVED', 'PROCESSING', 'CANCELLED'];
-        case 'APPROVED':
-          return ['PROCESSING', 'CANCELLED'];
-        case 'PROCESSING':
-          return ['COMPLETED', 'CANCELLED'];
-        case 'COMPLETED':
-        case 'CANCELLED':
-          return [];
-        default:
-          return ['APPROVED', 'PROCESSING', 'COMPLETED', 'CANCELLED'];
-      }
+    statusLabel(s) {
+      const key = this.normalizeStatusKey(s);
+      return this.ORDER_STATUS[key]?.label || '—';
     },
     isOptionDisabled(target) {
-      const cur = this.currentStatusUpper;
-      if (target === cur) return false;
-      if (cur === 'COMPLETED' || cur === 'CANCELLED') return true;
-      return !this.allowedNext(cur).includes(target);
+      if (this.isTerminalStatus) return true;
+      if (target === this.currentStatus) return false;
+      return !this.statusMeta.next.includes(target);
     },
     async handleStatusToggle(newVal) {
-      const cur = this.currentStatusUpper;
-      if (!newVal || newVal === cur) return;
+      if (!newVal || newVal === this.currentStatus) return;
       if (newVal === 'CANCELLED') {
         this.pendingNewStatus = newVal;
         this.confirmCancel = true;
         return;
       }
-      await this.doUpdateStatus(newVal);
+      if (newVal === 'COMPLETED') {
+        this.pendingNewStatus = newVal;
+        this.completeDialog = true;
+        return;
+      }
+      await this.changeStatus(newVal);
     },
     async confirmCancelAction() {
-      try {
-        if (!this.pendingNewStatus) return;
-        await this.doUpdateStatus(this.pendingNewStatus);
-      } finally {
-        this.confirmCancel = false;
-        this.pendingNewStatus = null;
-      }
-    },
-    statusLabel(s) {
-      const x = String(s || '').toUpperCase();
-      const map = {
-        PENDENTE: 'Pendente',
-        PENDING: 'Pendente',
-        APROVADO: 'Aprovado',
-        APPROVED: 'Aprovado',
-        PROCESSING: 'Processando',
-        PROCESSANDO: 'Processando',
-        CONCLUIDO: 'Concluído',
-        CONCLUÍDO: 'Concluído',
-        COMPLETED: 'Concluído',
-        CANCELADO: 'Cancelado',
-        CANCELLED: 'Cancelado',
-      };
-      return map[x] || s || '—';
+      if (!this.pendingNewStatus) return;
+      await this.changeStatus(this.pendingNewStatus);
+      this.confirmCancel = false;
+      this.pendingNewStatus = null;
     },
     async fetchSuppliers() {
       this.suppliersLoading = true;
@@ -564,10 +501,12 @@ export default {
       this.supplierNames = [];
       this.selectedStatus = null;
       this.confirmCancel = false;
+      this.completeDialog = false;
       this.pendingNewStatus = null;
       this.snack = { show: false, color: 'success', text: '' };
       this.form = { supplierId: null, items: [] };
       this.pick = { itemId: null, qtd: 1 };
+      this.completeDate = null;
       if (this.$refs.formRef) this.$refs.formRef.resetValidation();
     },
     addPickedItem() {
@@ -632,28 +571,72 @@ export default {
         this.loading = false;
       }
     },
+    async changeStatus(status, withdrawDay = null) {
+      if (!this.orderDetails?.id) return;
+      try {
+        switch (status) {
+          case 'APPROVED':
+          case 'PROCESSING':
+          case 'CANCELLED':
+            await this.ordersStore.updateStatus(this.orderDetails.id, status);
+            break;
+          case 'COMPLETED':
+            await this.ordersStore.updateStatus(this.orderDetails.id, status, {
+              withdrawDay: withdrawDay || new Date().toISOString().slice(0, 10),
+            });
+            break;
+          default:
+            return;
+        }
+        this.$emit('created', { created: true });
+        this.sidebar.close();
+      } catch (e) {
+        this.error = 'Falha ao atualizar status do pedido';
+        console.error(e);
+      }
+    },
     async statusChange(value) {
-      switch (value) {
-        case 'APPROVED':
-          await this.ordersStore.approve(this.orderDetails.id);
-          this.$emit('created', { created: true });
-          this.sidebar.close();
-          break;
-        case 'PROCESSING':
-          await this.ordersStore.process(this.orderDetails.id);
-          this.$emit('created', { created: true });
-          this.sidebar.close();
-          break;
-        case 'COMPLETED':
-          await this.ordersStore.complete(this.orderDetails.id);
-          this.$emit('created', { created: true });
-          this.sidebar.close();
-          break;
-        case 'CANCELLED':
-          await this.ordersStore.cancel(this.orderDetails.id);
-          this.$emit('created', { created: true });
-          this.sidebar.close();
-          break;
+      await this.changeStatus(value);
+    },
+    async loadOrderDetails(val) {
+      if (val?.mode === 'view' && val.orderId != null) {
+        try {
+          this.loading = true;
+          const data = await this.ordersStore.getById(val.orderId);
+          this.orderDetails = data || null;
+          this.orderItems = await this.ordersStore.getItemsByOrderId(val.orderId);
+
+          const supplierIds = Array.isArray(this.orderDetails?.supplierIds)
+            ? this.orderDetails.supplierIds
+            : [];
+          this.supplierNames = await Promise.all(
+            supplierIds.map(async (sid) => {
+              try {
+                const s = await this.supplierStore.getById(sid);
+                if (s && typeof s === 'object') {
+                  if (s.name && String(s.name).trim()) return String(s.name);
+                  if (s.nomeFantasia && String(s.nomeFantasia).trim())
+                    return String(s.nomeFantasia);
+                  if (s.razaoSocial && String(s.razaoSocial).trim()) return String(s.razaoSocial);
+                }
+                return `Fornecedor não encontrado (ID ${sid})`;
+              } catch {
+                return `Fornecedor não encontrado (ID ${sid})`;
+              }
+            }),
+          );
+
+          const cur = this.currentStatus;
+          const exists = this.statusOptions.some((o) => o.value === cur);
+          this.selectedStatus = exists ? cur : null;
+        } catch (e) {
+          this.orderDetails = null;
+          this.orderItems = [];
+          this.supplierNames = [];
+          this.selectedStatus = null;
+        } finally {
+          this.loading = false;
+        }
       }
     },
   },

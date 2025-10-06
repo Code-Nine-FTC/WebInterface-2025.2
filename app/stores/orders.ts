@@ -1,17 +1,17 @@
-import { defineStore } from "pinia";
-import { ref } from "vue";
+import { defineStore } from 'pinia';
+import { ref } from 'vue';
 
-export const useOrders = defineStore("orders", () => {
+export const useOrders = defineStore('orders', () => {
   const orders = ref<Array<any>>([]);
   const { $api } = useNuxtApp();
 
   async function list() {
     try {
-      const res: any = await $api("/orders");
+      const res: any = await $api('/orders');
       if (Array.isArray(res)) {
         orders.value = res;
-      } else if (res && typeof res === "object") {
-        const keys = ["content", "orders", "data", "results", "items"];
+      } else if (res && typeof res === 'object') {
+        const keys = ['content', 'orders', 'data', 'results', 'items'];
         let found: any[] | null = null;
         for (const k of keys) {
           if (Array.isArray(res[k])) {
@@ -27,24 +27,21 @@ export const useOrders = defineStore("orders", () => {
       }
       return orders.value;
     } catch (e) {
-      console.error("Failed to list orders:", e);
+      console.error('Failed to list orders:', e);
       return [];
     }
   }
 
-  async function create(payload: {
-    withdrawDay: string;
-    itemQuantities: Record<string, number>;
-  }) {
+  async function create(payload: { withdrawDay: string; itemQuantities: Record<string, number> }) {
     try {
-      const res: any = await $api("/orders", {
-        method: "POST",
+      const res: any = await $api('/orders', {
+        method: 'POST',
         body: payload,
       });
-      if (res && typeof res === "object") return res;
+      if (res && typeof res === 'object') return res;
       return null;
     } catch (e) {
-      console.error("Failed to create order:", e);
+      console.error('Failed to create order:', e);
       throw e;
     }
   }
@@ -52,11 +49,11 @@ export const useOrders = defineStore("orders", () => {
   async function update(payload: Record<string, any>) {
     try {
       return await $api(`/orders/${payload.id}`, {
-        method: "PUT",
+        method: 'PUT',
         body: payload,
       });
     } catch (e) {
-      console.error("Failed to update order:", e);
+      console.error('Failed to update order:', e);
       throw e;
     }
   }
@@ -64,10 +61,10 @@ export const useOrders = defineStore("orders", () => {
   async function updateStatus(orderId: string | number, status: string) {
     try {
       const res: any = await $api(`/orders/${orderId}/status`, {
-        method: "PUT",
+        method: 'PUT',
         body: { status },
       });
-      if (res && typeof res === "object") return res;
+      if (res && typeof res === 'object') return res;
       const now = new Date().toISOString();
       return {
         id: orderId,
@@ -80,43 +77,43 @@ export const useOrders = defineStore("orders", () => {
         supplierIds: [],
       };
     } catch (e) {
-      console.error("Failed to update order status:", e);
+      console.error('Failed to update order status:', e);
       throw e;
     }
   }
 
   async function approve(orderId: string | number) {
     try {
-      return await $api(`/orders/approve/${orderId}`, { method: "PATCH" });
+      return await $api(`/orders/approve/${orderId}`, { method: 'PATCH' });
     } catch (e) {
-      console.error("Failed to approve order:", e);
+      console.error('Failed to approve order:', e);
       return null;
     }
   }
 
   async function process(orderId: string | number) {
     try {
-      return await $api(`/orders/process/${orderId}`, { method: "PATCH" });
+      return await $api(`/orders/process/${orderId}`, { method: 'PATCH' });
     } catch (e) {
-      console.error("Failed to process order:", e);
+      console.error('Failed to process order:', e);
       return null;
     }
   }
 
-  async function complete(orderId: string | number) {
+  async function complete(orderId: string | number, date: Date) {
     try {
-      return await $api(`/orders/complete/${orderId}`, { method: "PATCH" });
+      return await $api(`/orders/complete/${orderId}`, { method: 'PATCH', body: { date } });
     } catch (e) {
-      console.error("Failed to complete order:", e);
+      console.error('Failed to complete order:', e);
       return null;
     }
   }
 
   async function cancel(orderId: string | number) {
     try {
-      return await $api(`/orders/cancel/${orderId}`, { method: "PATCH" });
+      return await $api(`/orders/cancel/${orderId}`, { method: 'PATCH' });
     } catch (e) {
-      console.error("Failed to cancel order:", e);
+      console.error('Failed to cancel order:', e);
       return null;
     }
   }
@@ -124,11 +121,11 @@ export const useOrders = defineStore("orders", () => {
   async function remove(payload: Record<string, any>) {
     try {
       return await $api(`/orders/${payload.id}`, {
-        method: "DELETE",
+        method: 'DELETE',
         body: payload,
       });
     } catch (e) {
-      console.error("Failed to delete order:", e);
+      console.error('Failed to delete order:', e);
       throw e;
     }
   }
@@ -137,7 +134,7 @@ export const useOrders = defineStore("orders", () => {
     try {
       return await $api(`/orders/${id}`);
     } catch (e) {
-      console.error("Failed to get order:", e);
+      console.error('Failed to get order:', e);
       throw e;
     }
   }
@@ -150,7 +147,7 @@ export const useOrders = defineStore("orders", () => {
       if (res?.items && Array.isArray(res.items)) return res.items;
       return [];
     } catch (e) {
-      console.error("Failed to get order items:", e);
+      console.error('Failed to get order items:', e);
       return [];
     }
   }

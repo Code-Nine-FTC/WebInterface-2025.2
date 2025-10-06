@@ -144,7 +144,11 @@
         </div>
       </div>
     </v-card>
-    <OrdersFormSidebar @created="handleOrderCreated" @updated="handleOrderUpdated" />
+    <OrdersFormSidebar
+      v-if="sidebar.isOpen"
+      @created="handleOrderCreated"
+      @updated="handleOrderUpdated"
+    />
   </div>
 </template>
 
@@ -158,7 +162,7 @@ import { useSupplier } from '~/stores/supplier';
 import { useStorage } from '~/stores/storage';
 import { useSidebarStore } from '~/stores/sidebar';
 import { useOrders } from '~/stores/orders';
-import OrdersFormSidebar from '~/components/sidebars/orders.vue';
+import { defineAsyncComponent } from 'vue';
 import { formatDate } from '~/utils';
 
 export default {
@@ -297,6 +301,7 @@ export default {
     this.supplierStore = useSupplier();
     this.storageStore = useStorage();
     this.sidebar = useSidebarStore();
+    console.log('Sidebar created, isOpen:', this.sidebar.isOpen, 'payload:', this.sidebar.payload);
     this.ordersStore = useOrders();
     await this.fetchAll();
   },
@@ -369,7 +374,6 @@ export default {
       this.sidebar?.open({ mode: 'create' });
     },
     async handleOrderCreated() {
-      // Após criar, recarrega a listagem do backend (mobile-equivalente)
       await this.fetchAll();
     },
     handleOrderUpdated(p) {
@@ -381,6 +385,9 @@ export default {
       const id = item?.id ?? item;
       this.sidebar?.open({ mode: 'view', orderId: id });
     },
+  },
+  components: {
+    OrdersFormSidebar: defineAsyncComponent(() => import('~/components/sidebars/orders.vue')),
   },
 };
 </script>
