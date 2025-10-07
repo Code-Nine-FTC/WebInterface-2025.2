@@ -7,24 +7,46 @@
   >
     <v-toolbar flat density="comfortable">
       <v-toolbar-title>
-        {{ isView ? "Detalhes do Tipo de Item" : isEdit ? "Editar Tipo de Item" : "Cadastrar Tipo de Item" }}
-        <span v-if="(isEdit || isView) && form.nomeTipo" class="ml-2 text-primary font-bold">
+        {{
+          isView
+            ? "Detalhes do Tipo de Item"
+            : isEdit
+            ? "Editar Tipo de Item"
+            : "Cadastrar Tipo de Item"
+        }}
+        <span
+          v-if="(isEdit || isView) && form.nomeTipo"
+          class="ml-2 text-primary font-bold"
+        >
           - {{ form.nomeTipo }}
         </span>
       </v-toolbar-title>
       <v-spacer />
-      <v-btn icon="mdi-close" :disabled="!isView && loading" @click="closeAndReset" />
+      <v-btn
+        icon="mdi-close"
+        :disabled="!isView && loading"
+        @click="closeAndReset"
+      />
     </v-toolbar>
-    <v-card v-if="(isEdit || isView) && (form.nomeTipo || selectedSectionName)" class="ma-4 pa-3" variant="tonal" color="primary">
+    <v-card
+      v-if="(isEdit || isView) && (form.nomeTipo || selectedSectionName)"
+      class="ma-4 pa-3"
+      variant="tonal"
+      color="primary"
+    >
       <v-card-text class="pa-0">
         <div class="d-flex flex-column gap-1">
           <div v-if="form.nomeTipo" class="d-flex align-center gap-2">
             <v-icon size="small" color="primary">mdi-tag</v-icon>
-            <span class="text-body-2"><strong>Nome:</strong> {{ form.nomeTipo }}</span>
+            <span class="text-body-2"
+              ><strong>Nome:</strong> {{ form.nomeTipo }}</span
+            >
           </div>
           <div v-if="selectedSectionName" class="d-flex align-center gap-2">
             <v-icon size="small" color="primary">mdi-folder</v-icon>
-            <span class="text-body-2"><strong>Seção:</strong> {{ selectedSectionName }}</span>
+            <span class="text-body-2"
+              ><strong>Seção:</strong> {{ selectedSectionName }}</span
+            >
           </div>
         </div>
       </v-card-text>
@@ -138,7 +160,7 @@ export default {
     },
     selectedSectionName() {
       if (!this.form.sectionId) return null;
-      const section = this.sections.find(s => s.id === this.form.sectionId);
+      const section = this.sections.find((s) => s.id === this.form.sectionId);
       return section ? section.title : null;
     },
   },
@@ -149,7 +171,7 @@ export default {
     this.sectionStore = useSection();
     this.sections = await this.sectionStore.list();
     const userSections = this.authStore.user?.sections || [];
-    if (this.userRole === 'ADMIN') {
+    if (this.userRole === "ADMIN") {
       this.form.sectionId = null;
     } else {
       this.form.sectionId = userSections.length ? userSections[0].id : null;
@@ -177,7 +199,8 @@ export default {
         try {
           const item = await this.typeItemStore.getById(id);
           this.form.nomeTipo = item.name || item.nomeTipo || "";
-          this.form.sectionId = item.sectionId || (this.authStore.user?.sections?.[0]?.id ?? null);
+          this.form.sectionId =
+            item.sectionId || (this.authStore.user?.sections?.[0]?.id ?? null);
         } catch (e) {
           this.form.nomeTipo = "";
           this.form.sectionId = this.authStore.user?.sections?.[0]?.id ?? null;

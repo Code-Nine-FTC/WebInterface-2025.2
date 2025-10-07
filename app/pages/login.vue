@@ -23,7 +23,13 @@
           hide-details="auto"
           required
         />
-        <v-btn class="mt-4" type="submit" color="primary" :loading="loading" block>
+        <v-btn
+          class="mt-4"
+          type="submit"
+          color="primary"
+          :loading="loading"
+          block
+        >
           Entrar
         </v-btn>
 
@@ -130,5 +136,4 @@ export default {
   box-shadow: none !important;
   padding: 0;
 }
-
 </style>
