@@ -58,30 +58,6 @@ export const useOrders = defineStore('orders', () => {
     }
   }
 
-  async function updateStatus(orderId: string | number, status: string) {
-    try {
-      const res: any = await $api(`/orders/${orderId}/status`, {
-        method: 'PUT',
-        body: { status },
-      });
-      if (res && typeof res === 'object') return res;
-      const now = new Date().toISOString();
-      return {
-        id: orderId,
-        withdrawDay: now,
-        status,
-        createdAt: now,
-        updatedAt: now,
-        lastUpdate: now,
-        itemIds: [],
-        supplierIds: [],
-      };
-    } catch (e) {
-      console.error('Failed to update order status:', e);
-      throw e;
-    }
-  }
-
   async function approve(orderId: string | number) {
     try {
       return await $api(`/orders/approve/${orderId}`, { method: 'PATCH' });
@@ -100,9 +76,28 @@ export const useOrders = defineStore('orders', () => {
     }
   }
 
-  async function complete(orderId: string | number, date: Date) {
+  async function complete(orderId: string | number, withdrawDay?: Date | string) {
     try {
-      return await $api(`/orders/complete/${orderId}`, { method: 'PATCH', body: { date } });
+      const dt = withdrawDay
+        ? withdrawDay instanceof Date
+          ? withdrawDay
+          : new Date(withdrawDay)
+        : new Date();
+
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const y = dt.getFullYear();
+      const m = pad(dt.getMonth() + 1);
+      const d = pad(dt.getDate());
+      const hh = pad(dt.getHours());
+      const mm = pad(dt.getMinutes());
+      const ss = pad(dt.getSeconds());
+      const localDateTime = `${y}-${m}-${d}T${hh}:${mm}:${ss}`;
+
+      return await $api(`/orders/complete/${orderId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(localDateTime),
+        headers: { 'Content-Type': 'application/json' },
+      });
     } catch (e) {
       console.error('Failed to complete order:', e);
       return null;
@@ -157,7 +152,6 @@ export const useOrders = defineStore('orders', () => {
     list,
     create,
     update,
-    updateStatus,
     approve,
     process,
     complete,

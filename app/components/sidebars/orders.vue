@@ -385,7 +385,6 @@ export default {
       }));
     },
     orderDetailsItems() {
-      // Prioriza a lista vinda de /orders/items/:id
       if (Array.isArray(this.orderItems) && this.orderItems.length) {
         return this.orderItems.map((it) => {
           const itemId = it.itemId ?? it.id;
@@ -413,6 +412,32 @@ export default {
         });
       }
       return [];
+    },
+    supplierOptions() {
+      return (this.suppliers || []).map((s) => ({
+        id: s.id,
+        label: s.name || s.nomeFantasia || s.razaoSocial || `Fornecedor ${s.id}`,
+      }));
+    },
+    itemOptions() {
+      return (this.items || []).map((i) => ({
+        id: i.itemId ?? i.id,
+        label: i.name || i.itemName || i.itemCode || `#${i.itemId ?? i.id}`,
+      }));
+    },
+    canAddPick() {
+      const id = this.pick?.itemId;
+      const qtd = Number(this.pick?.qtd ?? 0);
+      if (!id) return false;
+      if (!Number.isFinite(qtd) || !Number.isInteger(qtd) || qtd < 1) return false;
+      const base = (this.items || []).find((x) => (x.itemId ?? x.id) === id);
+      return Boolean(base);
+    },
+
+    canSubmit() {
+      return Boolean(
+        this.form.supplierId && Array.isArray(this.form.items) && this.form.items.length > 0,
+      );
     },
   },
   async created() {
@@ -576,14 +601,17 @@ export default {
       try {
         switch (status) {
           case 'APPROVED':
+            await this.ordersStore.approve(this.orderDetails.id, status);
+            break;
           case 'PROCESSING':
+            await this.ordersStore.process(this.orderDetails.id, status);
+            break;
           case 'CANCELLED':
-            await this.ordersStore.updateStatus(this.orderDetails.id, status);
+            await this.ordersStore.cancel(this.orderDetails.id, status);
             break;
           case 'COMPLETED':
-            await this.ordersStore.updateStatus(this.orderDetails.id, status, {
-              withdrawDay: withdrawDay || new Date().toISOString().slice(0, 10),
-            });
+            // recebe um Date (ou null) e repassa ao store; o store serializa para LocalDateTime
+            await this.ordersStore.complete(this.orderDetails.id, withdrawDay ?? new Date());
             break;
           default:
             return;
@@ -593,6 +621,17 @@ export default {
       } catch (e) {
         this.error = 'Falha ao atualizar status do pedido';
         console.error(e);
+      }
+    },
+    async confirmCompleteAction() {
+      const dt = this.completeDate ? new Date(`${this.completeDate}T00:00:00`) : new Date();
+      this.loading = true;
+      try {
+        await this.changeStatus('COMPLETED', dt);
+        this.completeDialog = false;
+      } finally {
+        this.loading = false;
+        this.pendingNewStatus = null;
       }
     },
     async statusChange(value) {
