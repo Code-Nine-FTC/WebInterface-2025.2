@@ -1,7 +1,8 @@
 export default defineNuxtPlugin(() => {
   const auth = useAuthStore();
   const tokenCookie = useCookie<string | null>("token");
-  const apiBase = useRuntimeConfig().public.apiBase;
+  const rc = useRuntimeConfig().public as any;
+  const apiBase = rc.API_BASE || rc.apiBase || 'http://localhost:8080';
 
   const api = $fetch.create({
     baseURL: apiBase,

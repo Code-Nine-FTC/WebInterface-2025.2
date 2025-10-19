@@ -18,7 +18,9 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
-      apiBase: process.env.API_BASE,
+      // Support both API_BASE and NUXT_PUBLIC_API_BASE envs (and provide uppercase alias)
+      apiBase: process.env.API_BASE || process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:8080',
+      API_BASE: process.env.API_BASE || process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:8080',
     },
   },
 
