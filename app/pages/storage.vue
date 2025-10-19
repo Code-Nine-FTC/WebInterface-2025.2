@@ -92,6 +92,22 @@
                     />
                   </template>
                 </v-tooltip>
+                <v-tooltip
+                  v-if="userRole === 'ADMIN' || userRole === 'MANAGER'"
+                  text="Registrar Perda"
+                  location="top"
+                >
+                  <template #activator="{ props }">
+                    <v-btn
+                      v-bind="props"
+                      size="small"
+                      icon="mdi-alert-circle"
+                      variant="text"
+                      color="error"
+                      @click="registerLoss(item)"
+                    />
+                  </template>
+                </v-tooltip>
               </div>
             </template>
             <template v-slot:item.expireDate="{ item }">
@@ -106,6 +122,7 @@
       </div>
     </v-card>
     <StorageItemSidebar @updated="onItemUpdated" />
+    <LossSidebar @loss-registered="onLossRegistered" />
   </div>
 </template>
 
@@ -117,6 +134,7 @@ definePageMeta({ layout: 'default' });
 import { useAuthStore } from '~/stores/auth';
 import { useStorage } from '~/stores/storage';
 import StorageItemSidebar from '~/components/sidebars/storage-item.vue';
+import LossSidebar from '~/components/sidebars/loss.vue';
 import { useSidebarStore } from '~/stores/sidebar';
 
 export default {
@@ -199,6 +217,9 @@ export default {
     onItemUpdated() {
       this.fetchData();
     },
+    onLossRegistered() {
+      this.fetchData();
+    },
     async fetchData() {
       this.loading = true;
       try {
@@ -236,6 +257,11 @@ export default {
       const id = raw?.itemId ?? raw?.id;
       if (!id) return;
       this.sidebar?.open({ mode: 'edit-item', itemId: id });
+    },
+    registerLoss(item) {
+      const raw = item?.raw ?? item;
+      if (!raw) return;
+      this.sidebar?.open({ mode: 'loss', item: raw });
     },
     goToTypeItems() {
       this.$router.push({ path: '/typeitems' });
