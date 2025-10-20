@@ -92,6 +92,18 @@
                     />
                   </template>
                 </v-tooltip>
+                <v-tooltip text="Lotes" location="top">
+                  <template #activator="{ props }">
+                    <v-btn
+                      v-bind="props"
+                      size="small"
+                      icon="mdi-view-list"
+                      variant="text"
+                      color="indigo"
+                      @click="openLots(item)"
+                    />
+                  </template>
+                </v-tooltip>
               </div>
             </template>
             <template v-slot:item.expireDate="{ item }">
@@ -236,6 +248,12 @@ export default {
       const id = raw?.itemId ?? raw?.id;
       if (!id) return;
       this.sidebar?.open({ mode: 'edit-item', itemId: id });
+    },
+    openLots(item) {
+      const raw = item?.raw ?? item;
+      const id = raw?.itemId ?? raw?.id;
+      if (!id) return;
+      this.$router.push({ path: `/items/${id}`, query: { tab: 'lotes' } });
     },
     goToTypeItems() {
       this.$router.push({ path: '/typeitems' });
