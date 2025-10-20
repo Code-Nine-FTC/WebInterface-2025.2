@@ -37,7 +37,10 @@ export const useItemLoss = defineStore('itemLoss', () => {
    */
   async function getLossesByItem(itemId: number) {
     try {
-      const res: any = await $api(`/items/${itemId}/losses`);
+      const res: any = await $api(`/items/loss`, {
+        method: 'GET',
+        params: { itemId },
+      });
 
       if (Array.isArray(res)) losses.value = res;
       else if (res?.losses) losses.value = res.losses;
@@ -51,9 +54,31 @@ export const useItemLoss = defineStore('itemLoss', () => {
     }
   }
 
+  /**
+   * Busca o histórico de todas as perdas registradas
+   */
+  async function getAllLosses() {
+    try {
+      const res: any = await $api(`/items/loss`, {
+        method: 'GET',
+      });
+
+      if (Array.isArray(res)) losses.value = res;
+      else if (res?.losses) losses.value = res.losses;
+      else if (res?.data) losses.value = res.data;
+      else losses.value = [];
+
+      return losses.value;
+    } catch (e) {
+      console.error('Failed to get all losses:', e);
+      return [];
+    }
+  }
+
   return {
     losses,
     registerLoss,
     getLossesByItem,
+    getAllLosses,
   };
 });

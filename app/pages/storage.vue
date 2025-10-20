@@ -33,6 +33,17 @@
           Cadastrar
         </v-btn>
         <v-btn
+          v-if="userRole === 'ADMIN' || userRole === 'MANAGER'"
+          prepend-icon="mdi-history"
+          density="comfortable"
+          color="warning"
+          class="flex-shrink-0 ml-2"
+          height="38"
+          @click="openHistoryDialog"
+        >
+          Histórico de Perdas
+        </v-btn>
+        <v-btn
           prepend-icon="mdi-arrow-right"
           density="comfortable"
           color="secondary"
@@ -123,6 +134,97 @@
     </v-card>
     <StorageItemSidebar @updated="onItemUpdated" />
     <LossSidebar @loss-registered="onLossRegistered" />
+
+    <!-- Dialog de Histórico de Perdas -->
+    <v-dialog v-model="historyDialog" max-width="1200">
+      <v-card>
+        <v-toolbar flat density="comfortable" color="warning">
+          <v-toolbar-title class="text-white">
+            <v-icon class="mr-2">mdi-history</v-icon>
+            Histórico de Perdas
+          </v-toolbar-title>
+          <v-spacer />
+          <v-btn icon="mdi-close" color="white" @click="historyDialog = false" />
+        </v-toolbar>
+
+        <v-card-text class="pa-4">
+          <!-- Campo de busca -->
+          <v-text-field
+            v-model="historySearch"
+            clearable
+            density="compact"
+            variant="outlined"
+            label="Pesquisar"
+            placeholder="Buscar por item, usuário, motivo..."
+            append-inner-icon="mdi-magnify"
+            class="mb-4"
+          />
+
+          <!-- Tabela de histórico -->
+          <v-data-table
+            :headers="historyHeaders"
+            :items="filteredHistoryData"
+            :loading="historyLoading"
+            item-key="id"
+            class="elevation-1"
+            :items-per-page="10"
+          >
+            <template v-slot:item.createDate="{ item }">
+              <span class="text-sm">{{ formatDate(item.createDate) }}</span>
+            </template>
+
+            <template v-slot:item.lostQuantity="{ item }">
+              <v-chip size="small" color="error" variant="tonal">
+                {{ item.lostQuantity }}
+              </v-chip>
+            </template>
+
+            <template v-slot:item.reason="{ item }">
+              <v-tooltip location="top">
+                <template #activator="{ props }">
+                  <span
+                    v-bind="props"
+                    class="text-sm text-slate-700"
+                    style="
+                      max-width: 300px;
+                      display: block;
+                      overflow: hidden;
+                      text-overflow: ellipsis;
+                      white-space: nowrap;
+                    "
+                  >
+                    {{ item.reason }}
+                  </span>
+                </template>
+                <span>{{ item.reason }}</span>
+              </v-tooltip>
+            </template>
+
+            <template v-slot:loading>
+              <v-skeleton-loader type="table-row@5" />
+            </template>
+
+            <template v-slot:no-data>
+              <div class="text-center py-8">
+                <v-icon size="64" color="grey">mdi-history</v-icon>
+                <p class="text-slate-500 mt-2">Nenhuma perda registrada</p>
+              </div>
+            </template>
+          </v-data-table>
+        </v-card-text>
+
+        <v-divider />
+
+        <v-card-actions class="pa-4">
+          <v-spacer />
+          <v-btn variant="text" color="primary" :loading="historyLoading" @click="loadHistoryData">
+            <v-icon class="mr-2">mdi-refresh</v-icon>
+            Atualizar
+          </v-btn>
+          <v-btn variant="text" @click="historyDialog = false">Fechar</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
@@ -136,6 +238,7 @@ import { useStorage } from '~/stores/storage';
 import StorageItemSidebar from '~/components/sidebars/storage-item.vue';
 import LossSidebar from '~/components/sidebars/loss.vue';
 import { useSidebarStore } from '~/stores/sidebar';
+import { useItemLoss } from '~/stores/itemLoss';
 
 export default {
   name: 'Storage',
@@ -160,12 +263,24 @@ export default {
         // { title: "QR", key: "qrCode" },
       ],
       sidebar: null,
+      historyDialog: false,
+      historyData: [],
+      historyLoading: false,
+      historySearch: '',
+      historyHeaders: [
+        { title: 'Item', key: 'itemName', sortable: true },
+        { title: 'Quantidade', key: 'lostQuantity', sortable: true, align: 'center' },
+        { title: 'Motivo', key: 'reason', sortable: false },
+        { title: 'Data/Hora', key: 'createDate', sortable: true },
+        { title: 'Usuário', key: 'recordedByName', sortable: true },
+      ],
     };
   },
   created() {
     this.auth = useAuthStore();
     this.storage = useStorage();
     this.sidebar = useSidebarStore();
+    this.itemLossStore = useItemLoss();
   },
   async mounted() {
     if (this.auth && typeof this.auth.initializeAuth === 'function') {
@@ -191,6 +306,16 @@ export default {
           'lastUserName',
           'itemId',
         ].some((key) => {
+          const v = item?.[key];
+          return v !== undefined && v !== null && v.toString().toLowerCase().includes(q);
+        });
+      });
+    },
+    filteredHistoryData() {
+      const q = (this.historySearch || '').toString().toLowerCase().trim();
+      if (!q) return this.historyData;
+      return this.historyData.filter((item) => {
+        return ['itemName', 'reason', 'recordedByName'].some((key) => {
           const v = item?.[key];
           return v !== undefined && v !== null && v.toString().toLowerCase().includes(q);
         });
@@ -232,6 +357,22 @@ export default {
         this.loading = false;
       } catch (e) {
         console.error('Error fetching data:', e);
+      }
+    },
+    async openHistoryDialog() {
+      this.historyDialog = true;
+      await this.loadHistoryData();
+    },
+    async loadHistoryData() {
+      this.historyLoading = true;
+      try {
+        const losses = await this.itemLossStore.getAllLosses();
+        this.historyData = losses || [];
+      } catch (e) {
+        console.error('Error fetching loss history:', e);
+        this.historyData = [];
+      } finally {
+        this.historyLoading = false;
       }
     },
     formatDate(value) {
