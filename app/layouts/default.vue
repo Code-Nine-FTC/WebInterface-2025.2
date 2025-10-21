@@ -148,6 +148,7 @@
 <script>
 import { useAuthStore } from '~/stores/auth';
 import { useNotification } from '~/stores/notification';
+import { getInitials, roleColor, roleName } from '~/utils';
 
 export default {
   name: 'default',
@@ -181,6 +182,12 @@ export default {
           icon: 'mdi-cart',
           to: '/orders',
           value: 'orders',
+        },
+        {
+          title: 'Validades',
+          icon: 'mdi-calendar-alert',
+          to: '/expiry',
+          value: 'expiry',
         },
       ],
       auth: null,
@@ -294,6 +301,9 @@ export default {
       };
       return colors[severity] || 'primary';
     },
+    getInitials,
+    roleColor,
+    roleName,
     setPageTitle(title) {
       this.pageTitle = title;
     },
