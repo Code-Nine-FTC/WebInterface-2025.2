@@ -62,7 +62,6 @@
                   :color="opt.color"
                   variant="tonal"
                   class="mr-1 mb-1"
-                  @click="statusChange(opt.value)"
                 >
                   <v-icon size="16" class="mr-1">{{ opt.icon }}</v-icon>
                   {{ opt.label }}
@@ -633,9 +632,6 @@ export default {
         this.loading = false;
         this.pendingNewStatus = null;
       }
-    },
-    async statusChange(value) {
-      await this.changeStatus(value);
     },
     async loadOrderDetails(val) {
       if (val?.mode === 'view' && val.orderId != null) {
