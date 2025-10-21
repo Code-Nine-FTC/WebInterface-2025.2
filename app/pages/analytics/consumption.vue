@@ -121,6 +121,24 @@
       </client-only>
     </v-card>
 
+      <!-- Gráfico de Série Temporal (Quantidade por Dia) -->
+      <v-card class="pa-5 mb-4" elevation="2">
+        <div class="d-flex align-center mb-4">
+          <v-icon icon="mdi-chart-timeline-variant" class="mr-2" />
+          <span class="text-subtitle-2 font-semibold">Quantidade de Produtos por Dia</span>
+        </div>
+        <client-only>
+          <component
+            :is="ApexChart"
+            :key="'temporal-' + fetchTick"
+            type="line"
+            height="350"
+            :options="chartOptionsTemporal"
+            :series="chartSeriesTemporal"
+          />
+        </client-only>
+      </v-card>
+
   </div>
 </template>
 
@@ -140,17 +158,9 @@ const store = useConsumptionAnalyticsStore();
 const { summary, series, seriesCategories, loading, startDate, endDate } = storeToRefs(store);
 const fetchData = store.fetchData;
 const ApexChart = shallowRef(null);
-const lastEchartsError = ref('');
 const chartKey = computed(() => JSON.stringify(summary.value));
 const fetchTick = ref(0);
-const showStaticTest = ref(false);
-const rawTestActive = ref(false);
-const rawEchartsDiv = ref(null);
-const rawTestStatus = ref('');
-const temporalDiv = ref(null);
 let temporalInstance = null;
-const mergeSeries = ref(true);
-const hideLegend = ref(false);
 
 async function onFetchClick() {
   try {
@@ -239,14 +249,60 @@ const chartSeriesPedidos = computed(() => [
   },
 ]);
 
-const temporalXType = computed(() => {
-  const cats = Array.isArray(seriesCategories?.value) ? seriesCategories.value : [];
-  if (cats.length > 0) {
-    const first = String(cats[0]);
-    if (/^\d{4}-\d{2}/.test(first) || !isNaN(Date.parse(first))) return 'datetime';
-  }
-  return 'category';
+const chartOptionsTemporal = computed(() => ({
+	chart: { id: 'temporal-quantidade' },
+	xaxis: {
+		type: 'datetime',
+		labels: {
+			datetimeUTC: false,
+			// Formato por granularidade
+			datetimeFormatter: {
+				year: 'yyyy',
+				month: 'MM/yyyy',
+				day: 'dd/MM/yyyy',
+				hour: 'dd/MM HH:mm'
+			},
+			rotate: -45,
+		},
+		title: { text: 'Data' },
+	},
+	yaxis: { title: { text: 'Quantidade' } },
+	stroke: { curve: 'smooth' },
+	dataLabels: { enabled: false },
+	markers: { size: 5 },
+	colors: ['#008FFB', '#00E396', '#FEB019', '#FF4560', '#775DD0', '#3F51B5', '#546E7A', '#D4526E'],
+	tooltip: {
+		shared: true, // útil se houver mais de um grupo no mesmo dia
+		x: {
+			// Mostra a data bonitinha no tooltip
+			format: 'dd/MM/yyyy'
+		},
+		y: {
+			formatter: (val) => (val == null ? '-' : Math.round(val))
+		}
+	}
+}));
+
+const chartSeriesTemporal = computed(() => {
+	// Garante arrays válidos
+	if (!Array.isArray(series.value) || !Array.isArray(seriesCategories.value)) return [];
+
+	// Mapeia cada grupo em pontos {x, y}, alinhando pelo índice da categoria
+	return series.value.map((grupo) => {
+		const dataArray = Array.isArray(grupo.data) ? grupo.data : [];
+		const pontos = seriesCategories.value.map((dateStr, idx) => {
+			// Usa null em dias sem valor para não “desenhar” zero
+			const y = dataArray[idx] ?? null;
+			// Apex aceita ISO (yyyy-MM-dd); se vier outro formato, converta aqui.
+			return { x: dateStr, y };
+		});
+		return {
+			name: grupo.nome || `Grupo ${grupo.grupoId}`,
+			data: pontos
+		};
+	});
 });
+
 
 </script>
 
