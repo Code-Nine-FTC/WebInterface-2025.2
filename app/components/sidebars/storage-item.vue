@@ -1,28 +1,16 @@
 <template>
-  <v-navigation-drawer
-    v-model="sidebar.isOpen"
-    location="right"
-    temporary
-    width="680"
-  >
+  <v-navigation-drawer v-model="isOpen" location="right" temporary width="680">
     <v-toolbar flat density="comfortable">
-      <v-toolbar-title>{{
-        isEdit ? "Editar Item" : "Detalhes do Item"
-      }}</v-toolbar-title>
+      <v-toolbar-title>{{ isEdit ? 'Editar Item' : 'Detalhes do Item' }}</v-toolbar-title>
       <v-spacer />
       <v-btn icon="mdi-close" :disabled="loading" @click="closeAndReset" />
     </v-toolbar>
     <v-divider />
 
-    <v-form
-      ref="formRef"
-      v-model="formValid"
-      class="pa-4"
-      @submit.prevent="submit"
-    >
-      <v-alert v-if="loading" type="info" variant="tonal" class="mb-3"
-        >Carregando dados do item...</v-alert
-      >
+    <v-form ref="formRef" v-model="formValid" class="pa-4" @submit.prevent="submit">
+      <v-alert v-if="loading" type="info" variant="tonal" class="mb-3">
+        Carregando dados do item...
+      </v-alert>
       <v-row dense>
         <v-col cols="12" md="8">
           <v-text-field
@@ -108,33 +96,27 @@
         </v-col>
 
         <v-col cols="12" class="d-flex justify-end ga-2 mt-4">
-          <v-btn type="button" variant="text" :disabled="loading" @click="reset"
-            >Limpar</v-btn
-          >
-          <v-btn v-if="isEdit" type="submit" color="primary" :loading="loading"
-            >Salvar</v-btn
-          >
+          <v-btn type="button" variant="text" :disabled="loading" @click="reset">Limpar</v-btn>
+          <v-btn v-if="isEdit" type="submit" color="primary" :loading="loading">Salvar</v-btn>
         </v-col>
       </v-row>
-      <v-alert v-if="error" type="error" variant="tonal" class="mt-2">{{
-        error
-      }}</v-alert>
-      <v-snackbar v-model="snack.show" :color="snack.color" timeout="2500">{{
-        snack.text
-      }}</v-snackbar>
+      <v-alert v-if="error" type="error" variant="tonal" class="mt-2">{{ error }}</v-alert>
+      <v-snackbar v-model="snack.show" :color="snack.color" timeout="2500">
+        {{ snack.text }}
+      </v-snackbar>
     </v-form>
   </v-navigation-drawer>
 </template>
 
 <script>
-import { useSidebarStore } from "~/stores/sidebar";
-import { useStorage } from "~/stores/storage";
-import { useSupplier } from "~/stores/supplier";
-import { useTypeItem } from "~/stores/typeItem";
+import { useSidebarStore } from '~/stores/sidebar';
+import { useStorage } from '~/stores/storage';
+import { useSupplier } from '~/stores/supplier';
+import { useTypeItem } from '~/stores/typeItem';
 
 export default {
-  name: "StorageItemSidebar",
-  emits: ["updated"],
+  name: 'StorageItemSidebar',
+  emits: ['updated'],
   data() {
     return {
       sidebar: null,
@@ -144,33 +126,40 @@ export default {
       loading: false,
       formValid: true,
       error: null,
-      snack: { show: false, color: "success", text: "" },
+      snack: { show: false, color: 'success', text: '' },
       suppliersLoading: false,
       typesLoading: false,
       suppliers: [],
       types: [],
       form: {
         id: null,
-        name: "",
+        name: '',
         currentStock: 0,
-        measure: "",
-        expireDate: "",
+        measure: '',
+        expireDate: '',
         supplierId: null,
         itemTypeId: null,
         minimumStock: 0,
         isActive: true,
       },
       rules: {
-        required: (v) => !!v || v === 0 || "Obrigatório",
-        int: (v) =>
-          (Number.isInteger(Number(v)) && Number(v) >= 0) || "Número inteiro",
-        nonneg: (v) => Number(v) >= 0 || "Número inválido",
+        required: (v) => !!v || v === 0 || 'Obrigatório',
+        int: (v) => (Number.isInteger(Number(v)) && Number(v) >= 0) || 'Número inteiro',
+        nonneg: (v) => Number(v) >= 0 || 'Número inválido',
       },
     };
   },
   computed: {
+    isOpen: {
+      get() {
+        return this.sidebar?.isOpen && this.sidebar?.payload?.mode === 'edit-item';
+      },
+      set(value) {
+        if (!value) this.sidebar?.close();
+      },
+    },
     isEdit() {
-      return this.sidebar?.payload?.mode === "edit-item";
+      return this.sidebar?.payload?.mode === 'edit-item';
     },
     itemId() {
       return this.sidebar?.payload?.itemId ?? null;
@@ -178,10 +167,10 @@ export default {
     expireDateInput: {
       get() {
         const v = this.form?.expireDate;
-        if (!v) return "";
+        if (!v) return '';
         const d = new Date(v);
         if (isNaN(d.getTime())) return String(v);
-        const pad = (n) => String(n).padStart(2, "0");
+        const pad = (n) => String(n).padStart(2, '0');
         const yyyy = d.getFullYear();
         const mm = pad(d.getMonth() + 1);
         const dd = pad(d.getDate());
@@ -190,14 +179,12 @@ export default {
         return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
       },
       set(val) {
-        this.form.expireDate = val || "";
+        this.form.expireDate = val || '';
       },
     },
     supplierOptions() {
       return (this.suppliers || [])
-        .filter(
-          (s) => (s.name || s.nomeFantasia || "") !== "Usuario de Migração"
-        )
+        .filter((s) => (s.name || s.nomeFantasia || '') !== 'Usuario de Migração')
         .map((s) => ({
           id: Number(s.id),
           label: s.name || s.nomeFantasia || s.razaoSocial || `#${s.id}`,
@@ -217,13 +204,13 @@ export default {
     this.typeItemStore = useTypeItem();
   },
   watch: {
-    "sidebar.isOpen"(open) {
+    isOpen(open) {
       if (!open) setTimeout(() => this.reset(), 150);
     },
-    "sidebar.payload": {
+    'sidebar.payload': {
       deep: true,
       async handler(val) {
-        if (val?.mode === "edit-item" && val.itemId != null) {
+        if (val?.mode === 'edit-item' && val.itemId != null) {
           try {
             this.loading = true;
             // carrega opções
@@ -234,14 +221,12 @@ export default {
               const id = data.itemId ?? data.id ?? val.itemId;
               this.form = {
                 id,
-                name: data.name ?? "",
+                name: data.name ?? '',
                 currentStock: data.currentStock ?? 0,
-                measure: data.measure ?? "",
-                expireDate: data.expireDate ?? "",
-                supplierId:
-                  data.supplierId != null ? Number(data.supplierId) : null,
-                itemTypeId:
-                  data.itemTypeId != null ? Number(data.itemTypeId) : null,
+                measure: data.measure ?? '',
+                expireDate: data.expireDate ?? '',
+                supplierId: data.supplierId != null ? Number(data.supplierId) : null,
+                itemTypeId: data.itemTypeId != null ? Number(data.itemTypeId) : null,
                 minimumStock: data.minimumStock ?? 0,
                 isActive: data.isActive ?? data.active ?? true,
               };
@@ -284,10 +269,10 @@ export default {
       this.error = null;
       this.form = {
         id: null,
-        name: "",
+        name: '',
         currentStock: 0,
-        measure: "",
-        expireDate: "",
+        measure: '',
+        expireDate: '',
         supplierId: null,
         itemTypeId: null,
         minimumStock: 0,
@@ -316,14 +301,14 @@ export default {
         const res = await this.storage.updateItem(this.form.id, payload);
         this.snack = {
           show: true,
-          color: "success",
-          text: "Item atualizado com sucesso",
+          color: 'success',
+          text: 'Item atualizado com sucesso',
         };
-        this.$emit("updated", { id: this.form.id, ...payload });
+        this.$emit('updated', { id: this.form.id, ...payload });
         this.sidebar.close();
         this.reset();
       } catch (e) {
-        this.error = "Falha ao atualizar item";
+        this.error = 'Falha ao atualizar item';
         console.error(e);
       } finally {
         this.loading = false;
