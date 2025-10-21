@@ -110,14 +110,15 @@
         <span class="text-subtitle-2 font-semibold">Ranking por Pedidos</span>
       </div>
       <client-only>
-        <component
-          :is="ApexChart"
-          :key="chartKey + '-pedidos-' + fetchTick"
-          type="bar"
-          height="350"
-          :options="chartOptionsPedidos"
-          :series="chartSeriesPedidos"
-        />
+			<component
+			:is="ApexChart"
+			:key="'temporal-' + JSON.stringify(categoriesBR) + '-' + fetchTick"
+			type="line"
+			height="350"
+			:options="chartOptionsTemporal"
+			:series="chartSeriesTemporal"
+			/>
+
       </client-only>
     </v-card>
 
@@ -249,59 +250,73 @@ const chartSeriesPedidos = computed(() => [
   },
 ]);
 
+// helpers
+function toYmd(s) {
+	const v = String(s ?? '').trim();
+	return v; // já vem correto do backend
+}
+function ymdToBR(ymd) {
+	if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return String(ymd);
+	const [y, m, d] = ymd.split('-');
+	return `${d}/${m}/${y}`;
+}
+
+// categorias prontas (texto, dd/MM/yyyy)
+const categoriesBR = computed(() => {
+	const catsYMD = Array.isArray(seriesCategories.value)
+		? seriesCategories.value.map(toYmd).filter(Boolean)
+		: [];
+	return catsYMD.map(ymdToBR);
+});
+
+// ✅ eixo por CATEGORIA, rótulo como texto (sem abreviação)
 const chartOptionsTemporal = computed(() => ({
 	chart: { id: 'temporal-quantidade' },
 	xaxis: {
-		type: 'datetime',
-		labels: {
-			datetimeUTC: false,
-			// Formato por granularidade
-			datetimeFormatter: {
-				year: 'yyyy',
-				month: 'MM/yyyy',
-				day: 'dd/MM/yyyy',
-				hour: 'dd/MM HH:mm'
-			},
-			rotate: -45,
-		},
+		type: 'category',
+		categories: categoriesBR.value,     // "03/10/2025", "21/10/2025"
 		title: { text: 'Data' },
+		labels: {
+			rotate: -45,
+			rotateAlways: true,
+			hideOverlappingLabels: false,
+			trim: false,
+			formatter: (val) => String(val) // já formatado
+		},
+		tickPlacement: 'on'
 	},
 	yaxis: { title: { text: 'Quantidade' } },
 	stroke: { curve: 'smooth' },
 	dataLabels: { enabled: false },
 	markers: { size: 5 },
-	colors: ['#008FFB', '#00E396', '#FEB019', '#FF4560', '#775DD0', '#3F51B5', '#546E7A', '#D4526E'],
 	tooltip: {
-		shared: true, // útil se houver mais de um grupo no mesmo dia
+		shared: true,
 		x: {
-			// Mostra a data bonitinha no tooltip
-			format: 'dd/MM/yyyy'
+			// usa exatamente a categoria mostrada no eixo
+			formatter: (_val, { dataPointIndex, w }) =>
+				String(w.globals.categoryLabels?.[dataPointIndex] ?? '')
 		},
-		y: {
-			formatter: (val) => (val == null ? '-' : Math.round(val))
-		}
-	}
+		y: { formatter: (v) => (v == null ? '-' : Math.round(v)) }
+	},
+	colors: ['#008FFB', '#00E396', '#FEB019', '#FF4560', '#775DD0', '#3F51B5', '#546E7A', '#D4526E']
 }));
 
-const chartSeriesTemporal = computed(() => {
-	// Garante arrays válidos
-	if (!Array.isArray(series.value) || !Array.isArray(seriesCategories.value)) return [];
 
-	// Mapeia cada grupo em pontos {x, y}, alinhando pelo índice da categoria
+const chartSeriesTemporal = computed(() => {
+	if (!Array.isArray(series.value) || !Array.isArray(seriesCategories.value)) return [];
+	const len = categoriesBR.value.length;
+
 	return series.value.map((grupo) => {
-		const dataArray = Array.isArray(grupo.data) ? grupo.data : [];
-		const pontos = seriesCategories.value.map((dateStr, idx) => {
-			// Usa null em dias sem valor para não “desenhar” zero
-			const y = dataArray[idx] ?? null;
-			// Apex aceita ISO (yyyy-MM-dd); se vier outro formato, converta aqui.
-			return { x: dateStr, y };
+		const vals = Array.isArray(grupo.data) ? grupo.data.slice(0, len) : [];
+		const data = Array.from({ length: len }, (_, i) => {
+			const v = vals[i];
+			return (v === 0 || v == null) ? null : v; // <-- 👈 0 vira null (não desenha)
 		});
-		return {
-			name: grupo.nome || `Grupo ${grupo.grupoId}`,
-			data: pontos
-		};
+		return { name: grupo.nome || `Grupo ${grupo.grupoId}`, data };
 	});
 });
+
+
 
 
 </script>
