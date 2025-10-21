@@ -54,9 +54,73 @@
       <v-toolbar-title>{{ pageTitle }}</v-toolbar-title>
       <v-img :width="50" :max-height="50" src="../assets/icons/logo.svg" />
       <v-spacer />
-      <v-btn icon>
-        <v-icon>mdi-bell</v-icon>
-      </v-btn>
+
+      <v-menu :close-on-content-click="false" max-width="400">
+        <template #activator="{ props }">
+          <v-btn icon v-bind="props">
+            <v-badge v-if="notificationCount > 0" :content="notificationCount" color="red" overlap>
+              <v-icon>mdi-bell</v-icon>
+            </v-badge>
+            <v-icon v-else>mdi-bell</v-icon>
+          </v-btn>
+        </template>
+
+        <v-card>
+          <v-card-title class="d-flex justify-space-between align-center">
+            <span>Notificações</span>
+            <v-btn
+              v-if="notifications.length > 0"
+              size="small"
+              variant="text"
+              color="primary"
+              @click="markAllAsRead"
+            >
+              Marcar todas como lidas
+            </v-btn>
+          </v-card-title>
+
+          <v-divider />
+
+          <v-list v-if="notifications.length > 0" max-height="400" class="overflow-y-auto">
+            <v-list-item
+              v-for="notification in notifications"
+              :key="notification.id"
+              class="notification-item"
+            >
+              <template #prepend>
+                <v-icon :color="getNotificationColor(notification.severity)">
+                  {{ getNotificationIcon(notification.type) }}
+                </v-icon>
+              </template>
+
+              <v-list-item-title>
+                {{ getNotificationTitle(notification) }}
+              </v-list-item-title>
+              <v-list-item-subtitle>
+                {{ notification.message }}
+              </v-list-item-subtitle>
+
+              <template #append>
+                <v-btn
+                  icon
+                  size="small"
+                  variant="text"
+                  color="red"
+                  @click="markAsRead(notification)"
+                >
+                  <v-icon size="20">mdi-delete</v-icon>
+                </v-btn>
+              </template>
+            </v-list-item>
+          </v-list>
+
+          <v-card-text v-else class="text-center py-8 text-grey">
+            <v-icon size="64" color="grey-lighten-1">mdi-bell-off-outline</v-icon>
+            <div class="mt-2">Nenhuma notificação</div>
+          </v-card-text>
+        </v-card>
+      </v-menu>
+
       <v-menu>
         <template #activator="{ props }">
           <v-btn color="white" v-bind="props" icon>
@@ -118,14 +182,9 @@ export default {
           to: '/orders',
           value: 'orders',
         },
-        // {
-        //   title: "Seções",
-        //   icon: "mdi-view-grid",
-        //   to: "/sections",
-        //   value: "sections",
-        // }
       ],
       auth: null,
+      notification: null,
     };
   },
   created() {
@@ -136,6 +195,16 @@ export default {
   async mounted() {
     await this.auth.initializeAuth();
     this.updatePageTitle();
+    await this.fetchNotifications();
+
+    this.notificationInterval = setInterval(() => {
+      this.fetchNotifications();
+    }, 10000);
+  },
+  beforeUnmount() {
+    if (this.notificationInterval) {
+      clearInterval(this.notificationInterval);
+    }
   },
   watch: {
     $route: {
@@ -165,18 +234,70 @@ export default {
         return true;
       });
     },
+    notifications() {
+      console.log('Computed notifications:', this.notification?.notifications);
+      return this.notification?.notifications || [];
+    },
+    notificationCount() {
+      console.log('Notification count:', this.notifications.length);
+      return this.notifications.length;
+    },
   },
   methods: {
+    getInitials(name) {
+      if (!name) return '?';
+      const names = name.split(' ');
+      if (names.length >= 2) {
+        return `${names[0][0]}${names[1][0]}`.toUpperCase();
+      }
+      return name[0].toUpperCase();
+    },
+    roleColor(role) {
+      const colors = {
+        ADMIN: 'red',
+        MANAGER: 'blue',
+        USER: 'green',
+      };
+      return colors[role] || 'grey';
+    },
+    roleName(role) {
+      const names = {
+        ADMIN: 'Admin',
+        MANAGER: 'Gerente',
+        USER: 'Usuário',
+      };
+      return names[role] || role;
+    },
+    getNotificationTitle(notification) {
+      if (notification.type === 'ORDER_PROCESSING' && notification.order) {
+        return `Pedido #${notification.order.id}`;
+      }
+      return notification.title || 'Notificação';
+    },
+    getNotificationIcon(type) {
+      const icons = {
+        ORDER_PROCESSING: 'mdi-cart-check',
+        ORDER_DELIVERED: 'mdi-truck-delivery',
+        ORDER_CANCELED: 'mdi-cart-remove',
+        STOCK_LOW: 'mdi-alert',
+        STOCK_OUT: 'mdi-alert-circle',
+      };
+      return icons[type] || 'mdi-bell-outline';
+    },
+    getNotificationColor(severity) {
+      const colors = {
+        INFO: 'blue',
+        PROCESSING: 'purple',
+        WARNING: 'orange',
+        ERROR: 'red',
+        SUCCESS: 'green',
+      };
+      return colors[severity] || 'primary';
+    },
     setPageTitle(title) {
       this.pageTitle = title;
     },
     updatePageTitle() {
-      // const sortedMenu = [...this.menuItems].sort(
-      //   (a, b) => b.to.length - a.to.length
-      // );
-      // const currentMenuItem = sortedMenu.find((item) =>
-      //   this.$route.path.startsWith(item.to)
-      // );
       if (this.pageTitle) {
         this.pageTitle = this.pageTitle;
       } else {
@@ -185,9 +306,28 @@ export default {
     },
     async fetchNotifications() {
       try {
-        await this.notification.fetchNotifications();
+        console.log('Buscando notificações...');
+        const result = await this.notification.fetchNotifications();
+        console.log('Notificações retornadas no componente:', result);
+        console.log('State das notificações:', this.notification.notifications);
       } catch (error) {
         console.error('Erro ao buscar notificações:', error);
+      }
+    },
+    async markAsRead(notification) {
+      try {
+        await this.notification.acknowledge({ id: notification.id });
+        await this.fetchNotifications();
+      } catch (error) {
+        console.error('Erro ao marcar notificação como lida:', error);
+      }
+    },
+    async markAllAsRead() {
+      try {
+        await this.notification.acknowledgeAll({});
+        await this.fetchNotifications();
+      } catch (error) {
+        console.error('Erro ao marcar todas as notificações como lidas:', error);
       }
     },
     logout() {
@@ -204,6 +344,14 @@ export default {
 <style scoped>
 .v-main {
   background-color: #f5f5f5;
+}
+
+.notification-item {
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.notification-item:last-child {
+  border-bottom: none;
 }
 
 @media (max-width: 768px) {
