@@ -1,20 +1,23 @@
-import { defineStore } from "pinia";
-import { ref } from "vue";
+import { defineStore } from 'pinia';
+import { ref } from 'vue';
 
-export const useOrders = defineStore("orders", () => {
+export const useOrders = defineStore('orders', () => {
   const orders = ref<Array<any>>([]);
   const { $api } = useNuxtApp();
 
   async function list() {
     try {
-      const res: any = await $api("/orders");
+      const res: any = await $api('/orders');
       if (Array.isArray(res)) {
         orders.value = res;
       } else if (res && typeof res === 'object') {
         const keys = ['content', 'orders', 'data', 'results', 'items'];
         let found: any[] | null = null;
         for (const k of keys) {
-          if (Array.isArray(res[k])) { found = res[k]; break; }
+          if (Array.isArray(res[k])) {
+            found = res[k];
+            break;
+          }
         }
         if (found) orders.value = found;
         else if (res.id != null) orders.value = [res];
@@ -24,107 +27,100 @@ export const useOrders = defineStore("orders", () => {
       }
       return orders.value;
     } catch (e) {
-      console.error("Failed to list orders:", e);
+      console.error('Failed to list orders:', e);
       return [];
     }
   }
 
   async function create(payload: { withdrawDay: string; itemQuantities: Record<string, number> }) {
     try {
-      const res: any = await $api("/orders", {
-        method: "POST",
+      const res: any = await $api('/orders', {
+        method: 'POST',
         body: payload,
       });
-      // Backend pode não retornar JSON no 200; siga o padrão do mobile
-      if (res && typeof res === "object") return res;
+      if (res && typeof res === 'object') return res;
       return null;
     } catch (e) {
-      console.error("Failed to create order:", e);
+      console.error('Failed to create order:', e);
       throw e;
     }
   }
 
   async function update(payload: Record<string, any>) {
     try {
-      return await $api(`/orders/${payload.id}` , {
-        method: "PUT",
+      return await $api(`/orders/${payload.id}`, {
+        method: 'PUT',
         body: payload,
       });
     } catch (e) {
-      console.error("Failed to update order:", e);
-      throw e;
-    }
-  }
-
-  async function updateStatus(orderId: string | number, status: string) {
-    try {
-      const res: any = await $api(`/orders/${orderId}/status`, {
-        method: "PUT",
-        body: { status },
-      });
-      // Backend pode retornar vazio/texto; padroniza retorno como objeto similar ao mobile
-      if (res && typeof res === "object") return res;
-      const now = new Date().toISOString();
-      return {
-        id: orderId,
-        withdrawDay: now,
-        status,
-        createdAt: now,
-        updatedAt: now,
-        lastUpdate: now,
-        itemIds: [],
-        supplierIds: [],
-      };
-    } catch (e) {
-      console.error("Failed to update order status:", e);
+      console.error('Failed to update order:', e);
       throw e;
     }
   }
 
   async function approve(orderId: string | number) {
     try {
-      return await $api(`/orders/approve/${orderId}`, { method: "PATCH" });
+      return await $api(`/orders/approve/${orderId}`, { method: 'PATCH' });
     } catch (e) {
-      console.error("Failed to approve order:", e);
+      console.error('Failed to approve order:', e);
       return null;
     }
   }
 
   async function process(orderId: string | number) {
     try {
-      return await $api(`/orders/process/${orderId}`, { method: "PATCH" });
+      return await $api(`/orders/process/${orderId}`, { method: 'PATCH' });
     } catch (e) {
-      console.error("Failed to process order:", e);
+      console.error('Failed to process order:', e);
       return null;
     }
   }
 
-  async function complete(orderId: string | number) {
+  async function complete(orderId: string | number, withdrawDay?: Date | string) {
     try {
-      return await $api(`/orders/complete/${orderId}`, { method: "PATCH" });
+      const dt = withdrawDay
+        ? withdrawDay instanceof Date
+          ? withdrawDay
+          : new Date(withdrawDay)
+        : new Date();
+
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const y = dt.getFullYear();
+      const m = pad(dt.getMonth() + 1);
+      const d = pad(dt.getDate());
+      const hh = pad(dt.getHours());
+      const mm = pad(dt.getMinutes());
+      const ss = pad(dt.getSeconds());
+      const localDateTime = `${y}-${m}-${d}T${hh}:${mm}:${ss}`;
+
+      return await $api(`/orders/complete/${orderId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(localDateTime),
+        headers: { 'Content-Type': 'application/json' },
+      });
     } catch (e) {
-      console.error("Failed to complete order:", e);
+      console.error('Failed to complete order:', e);
       return null;
     }
   }
 
   async function cancel(orderId: string | number) {
     try {
-      return await $api(`/orders/cancel/${orderId}`, { method: "PATCH" });
+      return await $api(`/orders/cancel/${orderId}`, { method: 'PATCH' });
     } catch (e) {
-      console.error("Failed to cancel order:", e);
+      console.error('Failed to cancel order:', e);
       return null;
     }
   }
 
   async function remove(payload: Record<string, any>) {
     try {
-      return await $api(`/orders/${payload.id}` , {
-        method: "DELETE",
+      return await $api(`/orders/${payload.id}`, {
+        method: 'DELETE',
         body: payload,
       });
     } catch (e) {
-      console.error("Failed to delete order:", e);
+      console.error('Failed to delete order:', e);
       throw e;
     }
   }
@@ -133,7 +129,7 @@ export const useOrders = defineStore("orders", () => {
     try {
       return await $api(`/orders/${id}`);
     } catch (e) {
-      console.error("Failed to get order:", e);
+      console.error('Failed to get order:', e);
       throw e;
     }
   }
@@ -146,7 +142,7 @@ export const useOrders = defineStore("orders", () => {
       if (res?.items && Array.isArray(res.items)) return res.items;
       return [];
     } catch (e) {
-      console.error("Failed to get order items:", e);
+      console.error('Failed to get order items:', e);
       return [];
     }
   }
@@ -156,7 +152,6 @@ export const useOrders = defineStore("orders", () => {
     list,
     create,
     update,
-    updateStatus,
     approve,
     process,
     complete,

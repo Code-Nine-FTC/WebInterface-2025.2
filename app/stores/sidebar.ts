@@ -1,11 +1,12 @@
-import { defineStore } from "pinia";
-import { ref } from "vue";
+import { defineStore } from 'pinia';
+import { ref } from 'vue';
 
-export const useSidebarStore = defineStore("sidebar", () => {
+export const useSidebarStore = defineStore('sidebar', () => {
   const isOpen = ref(false);
   const payload = ref<any>(null);
 
   function open(data?: any) {
+    console.log('Sidebar OPEN chamado', data);
     payload.value = data ?? null;
     isOpen.value = true;
   }

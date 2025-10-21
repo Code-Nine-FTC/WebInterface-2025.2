@@ -26,3 +26,6 @@ logs
 package-lock.json
 yarn.lock
 pnpm-lock.yaml
+.eslintcache
+.vscode/*
+!.vscode/settings.json

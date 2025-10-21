@@ -80,5 +80,3 @@ export const useTypeItem = defineStore("typeItem", () => {
     getById,
   };
 });
-
-
