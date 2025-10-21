@@ -1,11 +1,6 @@
 <template>
   <v-app>
-    <v-navigation-drawer
-      v-model="drawer"
-      :rail="rail"
-      permanent
-      @click="rail = false"
-    >
+    <v-navigation-drawer v-model="drawer" :rail="rail" permanent @click="rail = false">
       <div class="d-flex flex-column h-100">
         <v-list-item class="mt-4" nav>
           <template #prepend>
@@ -47,13 +42,7 @@
 
         <v-divider class="mt-2" />
         <div class="pa-3">
-          <v-btn
-            block
-            color="red"
-            variant="tonal"
-            prepend-icon="mdi-logout"
-            @click="logout"
-          >
+          <v-btn block color="red" variant="tonal" prepend-icon="mdi-logout" @click="logout">
             Sair
           </v-btn>
         </div>
@@ -93,40 +82,47 @@
 </template>
 
 <script>
-import { useAuthStore } from "~/stores/auth";
+import { useAuthStore } from '~/stores/auth';
+import { getInitials, roleColor, roleName } from '~/utils';
 
 export default {
-  name: "default",
+  name: 'default',
   data() {
     return {
       drawer: true,
       rail: false,
-      pageTitle: "Home",
+      pageTitle: 'Home',
       menuItems: [
-        { title: "Home", icon: "mdi-home", to: "/home", value: "home" },
+        { title: 'Home', icon: 'mdi-home', to: '/home', value: 'home' },
         {
-          title: "Stock",
-          icon: "mdi-warehouse",
-          to: "/storage",
-          value: "storage",
+          title: 'Stock',
+          icon: 'mdi-warehouse',
+          to: '/storage',
+          value: 'storage',
         },
         {
-          title: "Usuários",
-          icon: "mdi-account-multiple",
-          to: "/users",
-          value: "users",
+          title: 'Usuários',
+          icon: 'mdi-account-multiple',
+          to: '/users',
+          value: 'users',
         },
         {
-          title: "Fornecedores",
-          icon: "mdi-truck",
-          to: "/suppliers",
-          value: "suppliers",
+          title: 'Fornecedores',
+          icon: 'mdi-truck',
+          to: '/suppliers',
+          value: 'suppliers',
         },
         {
-          title: "Pedidos",
-          icon: "mdi-cart",
-          to: "/orders",
-          value: "orders",
+          title: 'Pedidos',
+          icon: 'mdi-cart',
+          to: '/orders',
+          value: 'orders',
+        },
+        {
+          title: 'Validades',
+          icon: 'mdi-calendar-alert',
+          to: '/expiry',
+          value: 'expiry',
         },
         // {
         //   title: "Seções",
@@ -156,10 +152,10 @@ export default {
   },
   computed: {
     userName() {
-      return this.auth?.user?.name || "Usuário";
+      return this.auth?.user?.name || 'Usuário';
     },
     userEmail() {
-      return this.auth?.user?.email || "—";
+      return this.auth?.user?.email || '—';
     },
     userAvatar() {
       return this.auth?.user?.avatar;
@@ -170,13 +166,15 @@ export default {
     filteredMenuItems() {
       const role = this.auth?.user?.role;
       return this.menuItems.filter((m) => {
-        if (m.value === "sections" && m.value === "users")
-          return role === "ADMIN";
+        if (m.value === 'sections' && m.value === 'users') return role === 'ADMIN';
         return true;
       });
     },
   },
   methods: {
+    getInitials,
+    roleColor,
+    roleName,
     setPageTitle(title) {
       this.pageTitle = title;
     },
@@ -190,14 +188,14 @@ export default {
       if (this.pageTitle) {
         this.pageTitle = this.pageTitle;
       } else {
-        this.pageTitle = "Home";
+        this.pageTitle = 'Home';
       }
     },
     logout() {
-      if (this.auth && typeof this.auth.logout === "function") {
+      if (this.auth && typeof this.auth.logout === 'function') {
         this.auth.logout();
       } else {
-        this.$router.push("/login");
+        this.$router.push('/login');
       }
     },
   },
