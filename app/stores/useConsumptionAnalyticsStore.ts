@@ -42,7 +42,7 @@ export const useConsumptionAnalyticsStore = defineStore('consumptionAnalytics', 
         },
       });
       console.log('Dados recebidos de /materiais/top:', res);
-  summary.value = Array.isArray(res) ? [...res] : [...(res?.data || [])];
+      summary.value = Array.isArray(res) ? [...res] : [...(res?.data || [])];
       const seriesRes = await $api('/api/analytics/grupos/demanda-series', {
         params: {
           startDate: formatDateParam(startDate.value),
@@ -51,11 +51,13 @@ export const useConsumptionAnalyticsStore = defineStore('consumptionAnalytics', 
           onlyCompleted: true,
         },
       });
-    console.log('Dados recebidos de /grupos/demanda-series:', seriesRes);
-  series.value = Array.isArray(seriesRes?.series) ? [...seriesRes.series] : [];
-  seriesCategories.value = Array.isArray(seriesRes?.categories) ? [...seriesRes.categories] : [];
+      console.log('Dados recebidos de /grupos/demanda-series:', seriesRes);
+      series.value = Array.isArray(seriesRes?.series) ? [...seriesRes.series] : [];
+      seriesCategories.value = Array.isArray(seriesRes?.categories)
+        ? [...seriesRes.categories]
+        : [];
     } catch (e) {
-  error.value = e;
+      error.value = e;
       summary.value = [];
       series.value = [];
     } finally {
@@ -63,15 +65,15 @@ export const useConsumptionAnalyticsStore = defineStore('consumptionAnalytics', 
     }
   }
 
-    return {
-      startDate,
-      endDate,
-      metric,
-      summary,
-      series,
-      seriesCategories,
-      loading,
-      error,
-      fetchData,
-    };
-  });
+  return {
+    startDate,
+    endDate,
+    metric,
+    summary,
+    series,
+    seriesCategories,
+    loading,
+    error,
+    fetchData,
+  };
+});

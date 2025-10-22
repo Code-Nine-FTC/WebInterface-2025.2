@@ -160,16 +160,18 @@ export default {
       menuItems: [
         { title: 'Home', icon: 'mdi-home', to: '/home', value: 'home' },
         {
-          title: "Dashboard",
-          icon: "mdi-chart-bar",
-          to: "/analytics/consumption",
-          value: "dashboard",
+          title: 'Dashboard',
+          icon: 'mdi-chart-bar',
+          to: '/analytics/consumption',
+          value: 'dashboard',
         },
         {
-          title: "Stock",
-          icon: "mdi-warehouse",
-          to: "/storage",
-          value: "storage",
+          title: 'Análises',
+          icon: 'mdi-chart-line',
+          to: '/analytics',
+          value: 'analytics',
+        },
+        {
           title: 'Stock',
           icon: 'mdi-warehouse',
           to: '/storage',
@@ -198,6 +200,12 @@ export default {
           icon: 'mdi-calendar-alert',
           to: '/expiry',
           value: 'expiry',
+        },
+        {
+          title: 'Seções',
+          icon: 'mdi-view-grid',
+          to: '/sections',
+          value: 'sections',
         },
       ],
       auth: null,
@@ -247,7 +255,9 @@ export default {
     filteredMenuItems() {
       const role = this.auth?.user?.role;
       return this.menuItems.filter((m) => {
-        if (m.value === 'sections' && m.value === 'users') return role === 'ADMIN';
+        if (m.value === 'users' || m.value === 'sections') {
+          return role === 'ADMIN';
+        }
         return true;
       });
     },
@@ -261,30 +271,6 @@ export default {
     },
   },
   methods: {
-    getInitials(name) {
-      if (!name) return '?';
-      const names = name.split(' ');
-      if (names.length >= 2) {
-        return `${names[0][0]}${names[1][0]}`.toUpperCase();
-      }
-      return name[0].toUpperCase();
-    },
-    roleColor(role) {
-      const colors = {
-        ADMIN: 'red',
-        MANAGER: 'blue',
-        USER: 'green',
-      };
-      return colors[role] || 'grey';
-    },
-    roleName(role) {
-      const names = {
-        ADMIN: 'Admin',
-        MANAGER: 'Gerente',
-        USER: 'Usuário',
-      };
-      return names[role] || role;
-    },
     getNotificationTitle(notification) {
       if (notification.type === 'ORDER_PROCESSING' && notification.order) {
         return `Pedido #${notification.order.id}`;

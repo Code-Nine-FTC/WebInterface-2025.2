@@ -53,9 +53,7 @@
             :min="startDate"
           />
         </v-menu>
-        <v-btn color="primary" class="ml-4" @click="onFetchClick" :loading="loading">
-          Buscar
-        </v-btn>
+        <v-btn color="primary" class="ml-4" @click="onFetchClick" :loading="loading">Buscar</v-btn>
       </div>
     </v-card>
 
@@ -81,28 +79,31 @@
           </tr>
         </tbody>
       </v-table>
-      <div v-if="!summary.length && !loading" class="py-4 text-center text-caption text-medium-emphasis">
+      <div
+        v-if="!summary.length && !loading"
+        class="py-4 text-center text-caption text-medium-emphasis"
+      >
         Nenhum dado encontrado
       </div>
     </v-card>
 
     <!-- Gráfico de Quantidade -->
     <v-card class="pa-5 mb-4" elevation="2">
-  <div class="d-flex align-center mb-4">
-    <v-icon icon="mdi-chart-bar" class="mr-2" />
-    <span class="text-subtitle-2 font-semibold">Ranking por Quantidade</span>
-  </div>
-  <client-only>
-    <component
-      :is="ApexChart"
-      :key="chartKey + '-' + fetchTick"
-      type="bar"
-      height="350"
-      :options="chartOptionsQuantidade"
-      :series="chartSeriesQuantidade"
-    />
-  </client-only>
-</v-card>
+      <div class="d-flex align-center mb-4">
+        <v-icon icon="mdi-chart-bar" class="mr-2" />
+        <span class="text-subtitle-2 font-semibold">Ranking por Quantidade</span>
+      </div>
+      <client-only>
+        <component
+          :is="ApexChart"
+          :key="chartKey + '-' + fetchTick"
+          type="bar"
+          height="350"
+          :options="chartOptionsQuantidade"
+          :series="chartSeriesQuantidade"
+        />
+      </client-only>
+    </v-card>
     <!-- Gráfico de Pedidos -->
     <v-card class="pa-5 mb-4" elevation="2">
       <div class="d-flex align-center mb-4">
@@ -110,36 +111,34 @@
         <span class="text-subtitle-2 font-semibold">Ranking por Pedidos</span>
       </div>
       <client-only>
-			<component
-			:is="ApexChart"
-			:key="'temporal-' + JSON.stringify(categoriesBR) + '-' + fetchTick"
-			type="line"
-			height="350"
-			:options="chartOptionsTemporal"
-			:series="chartSeriesTemporal"
-			/>
-
+        <component
+          :is="ApexChart"
+          :key="'temporal-' + JSON.stringify(categoriesBR) + '-' + fetchTick"
+          type="line"
+          height="350"
+          :options="chartOptionsTemporal"
+          :series="chartSeriesTemporal"
+        />
       </client-only>
     </v-card>
 
-      <!-- Gráfico de Série Temporal (Quantidade por Dia) -->
-      <v-card class="pa-5 mb-4" elevation="2">
-        <div class="d-flex align-center mb-4">
-          <v-icon icon="mdi-chart-timeline-variant" class="mr-2" />
-          <span class="text-subtitle-2 font-semibold">Quantidade de Produtos por Dia</span>
-        </div>
-        <client-only>
-          <component
-            :is="ApexChart"
-            :key="'temporal-' + fetchTick"
-            type="line"
-            height="350"
-            :options="chartOptionsTemporal"
-            :series="chartSeriesTemporal"
-          />
-        </client-only>
-      </v-card>
-
+    <!-- Gráfico de Série Temporal (Quantidade por Dia) -->
+    <v-card class="pa-5 mb-4" elevation="2">
+      <div class="d-flex align-center mb-4">
+        <v-icon icon="mdi-chart-timeline-variant" class="mr-2" />
+        <span class="text-subtitle-2 font-semibold">Quantidade de Produtos por Dia</span>
+      </div>
+      <client-only>
+        <component
+          :is="ApexChart"
+          :key="'temporal-' + fetchTick"
+          type="line"
+          height="350"
+          :options="chartOptionsTemporal"
+          :series="chartSeriesTemporal"
+        />
+      </client-only>
+    </v-card>
   </div>
 </template>
 
@@ -148,10 +147,10 @@ import { computed, watch, ref, onMounted, shallowRef, markRaw } from 'vue';
 const menuStart = ref(false);
 const menuEnd = ref(false);
 const startDateFormatted = computed(() =>
-  startDate.value ? new Date(startDate.value).toLocaleDateString('pt-BR') : ''
+  startDate.value ? new Date(startDate.value).toLocaleDateString('pt-BR') : '',
 );
 const endDateFormatted = computed(() =>
-  endDate.value ? new Date(endDate.value).toLocaleDateString('pt-BR') : ''
+  endDate.value ? new Date(endDate.value).toLocaleDateString('pt-BR') : '',
 );
 import { useConsumptionAnalyticsStore } from '~/stores/useConsumptionAnalyticsStore';
 import { storeToRefs } from 'pinia';
@@ -175,7 +174,9 @@ async function onFetchClick() {
       if (Array.isArray(series.value) && series.value.length > 0) {
         console.log('sample series raw:', JSON.stringify(series.value[0]));
       }
-    } catch (e) { console.debug('sample series stringify failed', e); }
+    } catch (e) {
+      console.debug('sample series stringify failed', e);
+    }
   } catch (e) {
     console.error('onFetchClick error', e);
   }
@@ -183,7 +184,9 @@ async function onFetchClick() {
 
 import { onBeforeUnmount } from 'vue';
 onBeforeUnmount(() => {
-  try { if (temporalInstance) temporalInstance.dispose(); } catch (e) {}
+  try {
+    if (temporalInstance) temporalInstance.dispose();
+  } catch (e) {}
 });
 
 onMounted(async () => {
@@ -205,12 +208,23 @@ const chartOptionsQuantidade = computed(() => ({
   stroke: { curve: 'smooth' },
   dataLabels: { enabled: false },
   plotOptions: {
-    bar: { distributed: true }
+    bar: { distributed: true },
   },
-  colors: Array.isArray(summary.value) ? summary.value.map((s, i) => {
-    const palette = ['#008FFB', '#00E396', '#FEB019', '#FF4560', '#775DD0', '#3F51B5', '#546E7A', '#D4526E'];
-    return palette[i % palette.length];
-  }) : [],
+  colors: Array.isArray(summary.value)
+    ? summary.value.map((s, i) => {
+        const palette = [
+          '#008FFB',
+          '#00E396',
+          '#FEB019',
+          '#FF4560',
+          '#775DD0',
+          '#3F51B5',
+          '#546E7A',
+          '#D4526E',
+        ];
+        return palette[i % palette.length];
+      })
+    : [],
 }));
 
 const chartSeriesQuantidade = computed(() => [
@@ -228,12 +242,23 @@ const chartOptionsPedidos = computed(() => ({
   stroke: { curve: 'smooth' },
   dataLabels: { enabled: false },
   plotOptions: {
-    bar: { distributed: true }
+    bar: { distributed: true },
   },
-  colors: Array.isArray(summary.value) ? summary.value.map((s, i) => {
-    const palette = ['#008FFB', '#00E396', '#FEB019', '#FF4560', '#775DD0', '#3F51B5', '#546E7A', '#D4526E'];
-    return palette[i % palette.length];
-  }) : [],
+  colors: Array.isArray(summary.value)
+    ? summary.value.map((s, i) => {
+        const palette = [
+          '#008FFB',
+          '#00E396',
+          '#FEB019',
+          '#FF4560',
+          '#775DD0',
+          '#3F51B5',
+          '#546E7A',
+          '#D4526E',
+        ];
+        return palette[i % palette.length];
+      })
+    : [],
   tooltip: {
     y: {
       formatter: function (val) {
@@ -252,73 +277,68 @@ const chartSeriesPedidos = computed(() => [
 
 // helpers
 function toYmd(s) {
-	const v = String(s ?? '').trim();
-	return v; // já vem correto do backend
+  const v = String(s ?? '').trim();
+  return v; // já vem correto do backend
 }
 function ymdToBR(ymd) {
-	if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return String(ymd);
-	const [y, m, d] = ymd.split('-');
-	return `${d}/${m}/${y}`;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return String(ymd);
+  const [y, m, d] = ymd.split('-');
+  return `${d}/${m}/${y}`;
 }
 
 // categorias prontas (texto, dd/MM/yyyy)
 const categoriesBR = computed(() => {
-	const catsYMD = Array.isArray(seriesCategories.value)
-		? seriesCategories.value.map(toYmd).filter(Boolean)
-		: [];
-	return catsYMD.map(ymdToBR);
+  const catsYMD = Array.isArray(seriesCategories.value)
+    ? seriesCategories.value.map(toYmd).filter(Boolean)
+    : [];
+  return catsYMD.map(ymdToBR);
 });
 
 // ✅ eixo por CATEGORIA, rótulo como texto (sem abreviação)
 const chartOptionsTemporal = computed(() => ({
-	chart: { id: 'temporal-quantidade' },
-	xaxis: {
-		type: 'category',
-		categories: categoriesBR.value,     // "03/10/2025", "21/10/2025"
-		title: { text: 'Data' },
-		labels: {
-			rotate: -45,
-			rotateAlways: true,
-			hideOverlappingLabels: false,
-			trim: false,
-			formatter: (val) => String(val) // já formatado
-		},
-		tickPlacement: 'on'
-	},
-	yaxis: { title: { text: 'Quantidade' } },
-	stroke: { curve: 'smooth' },
-	dataLabels: { enabled: false },
-	markers: { size: 5 },
-	tooltip: {
-		shared: true,
-		x: {
-			// usa exatamente a categoria mostrada no eixo
-			formatter: (_val, { dataPointIndex, w }) =>
-				String(w.globals.categoryLabels?.[dataPointIndex] ?? '')
-		},
-		y: { formatter: (v) => (v == null ? '-' : Math.round(v)) }
-	},
-	colors: ['#008FFB', '#00E396', '#FEB019', '#FF4560', '#775DD0', '#3F51B5', '#546E7A', '#D4526E']
+  chart: { id: 'temporal-quantidade' },
+  xaxis: {
+    type: 'category',
+    categories: categoriesBR.value, // "03/10/2025", "21/10/2025"
+    title: { text: 'Data' },
+    labels: {
+      rotate: -45,
+      rotateAlways: true,
+      hideOverlappingLabels: false,
+      trim: false,
+      formatter: (val) => String(val), // já formatado
+    },
+    tickPlacement: 'on',
+  },
+  yaxis: { title: { text: 'Quantidade' } },
+  stroke: { curve: 'smooth' },
+  dataLabels: { enabled: false },
+  markers: { size: 5 },
+  tooltip: {
+    shared: true,
+    x: {
+      // usa exatamente a categoria mostrada no eixo
+      formatter: (_val, { dataPointIndex, w }) =>
+        String(w.globals.categoryLabels?.[dataPointIndex] ?? ''),
+    },
+    y: { formatter: (v) => (v == null ? '-' : Math.round(v)) },
+  },
+  colors: ['#008FFB', '#00E396', '#FEB019', '#FF4560', '#775DD0', '#3F51B5', '#546E7A', '#D4526E'],
 }));
 
-
 const chartSeriesTemporal = computed(() => {
-	if (!Array.isArray(series.value) || !Array.isArray(seriesCategories.value)) return [];
-	const len = categoriesBR.value.length;
+  if (!Array.isArray(series.value) || !Array.isArray(seriesCategories.value)) return [];
+  const len = categoriesBR.value.length;
 
-	return series.value.map((grupo) => {
-		const vals = Array.isArray(grupo.data) ? grupo.data.slice(0, len) : [];
-		const data = Array.from({ length: len }, (_, i) => {
-			const v = vals[i];
-			return (v === 0 || v == null) ? null : v; // <-- 👈 0 vira null (não desenha)
-		});
-		return { name: grupo.nome || `Grupo ${grupo.grupoId}`, data };
-	});
+  return series.value.map((grupo) => {
+    const vals = Array.isArray(grupo.data) ? grupo.data.slice(0, len) : [];
+    const data = Array.from({ length: len }, (_, i) => {
+      const v = vals[i];
+      return v === 0 || v == null ? null : v; // <-- 👈 0 vira null (não desenha)
+    });
+    return { name: grupo.nome || `Grupo ${grupo.grupoId}`, data };
+  });
 });
-
-
-
-
 </script>
 
 <style scoped>
