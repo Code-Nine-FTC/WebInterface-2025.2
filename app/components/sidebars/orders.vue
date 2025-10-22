@@ -53,7 +53,7 @@
                 <template v-else>não informada</template>
               </span>
             </div>
-            
+
             <div class="d-flex flex-column gap-2 mt-3">
               <div class="text-caption text-medium-emphasis">Atualizar status</div>
               <v-btn-toggle
@@ -73,7 +73,6 @@
                   :color="opt.color"
                   variant="tonal"
                   class="mr-1 mb-1"
-                  @click="statusChange(opt.value)"
                 >
                   <v-icon size="16" class="mr-1">{{ opt.icon }}</v-icon>
                   {{ opt.label }}
@@ -200,7 +199,6 @@
             persistent-hint
           />
         </v-col>
-        
 
         <v-col cols="12">
           <v-card variant="tonal" color="primary">
@@ -325,7 +323,7 @@
 
 <script>
 import { useSidebarStore } from '~/stores/sidebar';
- 
+
 import { useStorage } from '~/stores/storage';
 import { useOrders } from '~/stores/orders';
 import { useSection } from '~/stores/section';
@@ -337,14 +335,14 @@ export default {
   data() {
     return {
       sidebar: null,
-  storageStore: null,
+      storageStore: null,
       itemsLoading: false,
       loading: false,
       formValid: true,
       error: null,
       orderDetails: null,
       orderItems: [],
-      
+
       selectedStatus: null,
       confirmCancel: false,
       completeDialog: false,
@@ -361,12 +359,12 @@ export default {
         qtd: 1,
       },
       completeDate: null,
-      
+
       items: [],
-  consumers: [],
-  consumersLoading: false,
-  consumersHint: '',
-  consumerSection: null,
+      consumers: [],
+      consumersLoading: false,
+      consumersHint: '',
+      consumerSection: null,
       ORDER_STATUS: {
         APPROVED: {
           label: 'Aprovado',
@@ -452,7 +450,7 @@ export default {
       }
       return [];
     },
-    
+
     itemOptions() {
       return (this.items || []).map((i) => ({
         id: i.itemId ?? i.id,
@@ -470,12 +468,17 @@ export default {
 
     canSubmit() {
       return Boolean(
-        this.form.orderNumber && this.form.consumerSectionId &&
-        Array.isArray(this.form.items) && this.form.items.length > 0,
+        this.form.orderNumber &&
+          this.form.consumerSectionId &&
+          Array.isArray(this.form.items) &&
+          this.form.items.length > 0,
       );
     },
     consumerSectionOptions() {
-      return (this.consumers || []).map((c) => ({ id: c.id, title: c.title || c.name || `#${c.id}` }));
+      return (this.consumers || []).map((c) => ({
+        id: c.id,
+        title: c.title || c.name || `#${c.id}`,
+      }));
     },
     displayOrderNumber() {
       const o = this.orderDetails || {};
@@ -544,7 +547,7 @@ export default {
       this.confirmCancel = false;
       this.pendingNewStatus = null;
     },
-    
+
     async fetchItems() {
       this.itemsLoading = true;
       try {
@@ -561,7 +564,8 @@ export default {
       try {
         this.consumers = await this.sectionStore.listConsumers();
         if (!this.consumers?.length) {
-          this.consumersHint = 'Nenhuma seção consumidora disponível. Recarregue ou contate o admin.';
+          this.consumersHint =
+            'Nenhuma seção consumidora disponível. Recarregue ou contate o admin.';
         }
       } catch (e) {
         const code = e?.status || e?.response?.status;
@@ -569,7 +573,7 @@ export default {
           const sessionSection = this.auth?.user?.sections?.[0];
           if (sessionSection?.id) {
             this.form.consumerSectionId = Number(sessionSection.id);
-            this.consumersHint = `Sem permissão para listar. Usando seção da sessão: ${sessionSection.title || sessionSection.name || ('#' + sessionSection.id)}`;
+            this.consumersHint = `Sem permissão para listar. Usando seção da sessão: ${sessionSection.title || sessionSection.name || '#' + sessionSection.id}`;
           } else {
             this.consumersHint = 'Sem permissão para listar seções consumidoras.';
           }
@@ -593,7 +597,7 @@ export default {
       this.completeDialog = false;
       this.pendingNewStatus = null;
       this.snack = { show: false, color: 'success', text: '' };
-  this.form = { orderNumber: '', consumerSectionId: null, withdrawDay: '', items: [] };
+      this.form = { orderNumber: '', consumerSectionId: null, withdrawDay: '', items: [] };
       this.pick = { itemId: null, qtd: 1 };
       this.completeDate = null;
       this.consumerSection = null;
@@ -711,9 +715,6 @@ export default {
         this.pendingNewStatus = null;
       }
     },
-    async statusChange(value) {
-      await this.changeStatus(value);
-    },
     async loadOrderDetails(val) {
       if (val?.mode === 'view' && val.orderId != null) {
         try {
@@ -722,8 +723,6 @@ export default {
           this.orderDetails = data || null;
           this.orderItems = await this.ordersStore.getItemsByOrderId(val.orderId);
           this.consumerSection = this.parseConsumerSection(this.orderDetails);
-
-          
 
           const cur = this.currentStatus;
           const exists = this.statusOptions.some((o) => o.value === cur);
@@ -740,11 +739,18 @@ export default {
     },
     parseConsumerSection(o) {
       if (!o || typeof o !== 'object') return { id: null, title: null };
-      const id = o.consumerSectionId ?? o.sectionId ?? o.consumerSection?.id ?? o.section?.id ?? null;
-      const title = o.consumerSectionTitle ?? o.sectionTitle ??
-        o.consumerSection?.title ?? o.consumerSection?.name ??
-        o.section?.title ?? o.section?.name ??
-        o.consumerSectionName ?? o.sectionName ?? null;
+      const id =
+        o.consumerSectionId ?? o.sectionId ?? o.consumerSection?.id ?? o.section?.id ?? null;
+      const title =
+        o.consumerSectionTitle ??
+        o.sectionTitle ??
+        o.consumerSection?.title ??
+        o.consumerSection?.name ??
+        o.section?.title ??
+        o.section?.name ??
+        o.consumerSectionName ??
+        o.sectionName ??
+        null;
       return { id, title };
     },
   },
