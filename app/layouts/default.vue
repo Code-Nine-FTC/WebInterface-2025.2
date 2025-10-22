@@ -128,12 +128,12 @@ export default {
           to: "/orders",
           value: "orders",
         },
-        // {
-        //   title: "Seções",
-        //   icon: "mdi-view-grid",
-        //   to: "/sections",
-        //   value: "sections",
-        // }
+        {
+          title: "Seções",
+          icon: "mdi-view-grid",
+          to: "/sections",
+          value: "sections",
+        }
       ],
       auth: null,
     };
@@ -170,8 +170,9 @@ export default {
     filteredMenuItems() {
       const role = this.auth?.user?.role;
       return this.menuItems.filter((m) => {
-        if (m.value === "sections" && m.value === "users")
+        if (m.value === "users" || m.value === "sections") {
           return role === "ADMIN";
+        }
         return true;
       });
     },

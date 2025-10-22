@@ -184,7 +184,7 @@ export default {
       const actions = [];
       const sidebar = useSidebarStore?.();
 
-      if (['ADMIN', 'MANAGER'].includes(this.userRole)) {
+        if (['ADMIN', 'MANAGER'].includes(this.userRole)) {
         actions.push(
           {
             label: 'Novo Fornecedor',
@@ -207,7 +207,13 @@ export default {
             run: () => this.$router.push('/users'),
           },
         );
-        // Botão "Nova Seção" ocultado conforme solicitação
+          if (this.userRole === 'ADMIN') {
+            actions.push({
+              label: 'Seções',
+              color: 'deep-purple',
+              run: () => this.$router.push('/sections'),
+            });
+          }
       }
       return actions;
     },

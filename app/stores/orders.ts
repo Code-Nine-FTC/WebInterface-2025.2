@@ -5,9 +5,12 @@ export const useOrders = defineStore('orders', () => {
   const orders = ref<Array<any>>([]);
   const { $api } = useNuxtApp();
 
-  async function list() {
+  async function list(payload: { sectionId?: number | string } = {}) {
     try {
-      const res: any = await $api('/orders');
+      const params = new URLSearchParams();
+      if (payload.sectionId != null) params.append('sectionId', String(payload.sectionId));
+      const url = params.toString() ? `/orders?${params.toString()}` : '/orders';
+      const res: any = await $api(url);
       if (Array.isArray(res)) {
         orders.value = res;
       } else if (res && typeof res === 'object') {
@@ -32,7 +35,7 @@ export const useOrders = defineStore('orders', () => {
     }
   }
 
-  async function create(payload: { withdrawDay: string; itemQuantities: Record<string, number> }) {
+  async function create(payload: { orderNumber: string; consumerSectionId: number; itemQuantities: Record<string, number>; withdrawDay?: string }) {
     try {
       const res: any = await $api('/orders', {
         method: 'POST',
