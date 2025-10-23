@@ -160,16 +160,10 @@ export default {
       menuItems: [
         { title: 'Home', icon: 'mdi-home', to: '/home', value: 'home' },
         {
-          title: 'Análises',
+          title: 'Dashboard de Análises',
           icon: 'mdi-chart-line',
-          to: '/analytics',
-          value: 'analytics',
-        },
-        {
-          title: 'Consumo (Seções)',
-          icon: 'mdi-chart-bar',
-          to: '/analytics-consumption',
-          value: 'analytics-consumption',
+          to: '/dashboard',
+          value: 'dashboard',
         },
         {
           title: 'Stock',
