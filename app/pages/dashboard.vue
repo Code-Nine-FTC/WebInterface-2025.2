@@ -1,32 +1,70 @@
 <template>
   <div class="pa-4 pa-md-6 bg-grey-lighten-4">
     <div class="mb-6">
-      <v-card class="elevation-2">
-        <v-card-text class="pa-4">
+      <v-card class="elevation-4 rounded-lg filter-card">
+        <v-card-text class="pa-5">
           <div class="d-flex flex-wrap align-center gap-3">
-            <v-text-field
-              v-model="startDate"
-              type="date"
-              label="Data Inicial"
-              density="comfortable"
-              variant="outlined"
-              hide-details
-              :max="endDate"
-              class="flex-grow-0"
-              style="max-width: 180px"
-            />
+            <v-menu
+              v-model="menuStartDate"
+              :close-on-content-click="false"
+              transition="scale-transition"
+              offset-y
+              min-width="auto"
+            >
+              <template #activator="{ props }">
+                <v-text-field
+                  :model-value="formattedStartDate"
+                  label="Data Inicial"
+                  prepend-inner-icon="mdi-calendar"
+                  readonly
+                  v-bind="props"
+                  density="comfortable"
+                  variant="outlined"
+                  hide-details
+                  class="date-field"
+                  color="primary"
+                  style="min-width: 220px"
+                />
+              </template>
+              <v-date-picker
+                v-model="startDatePicker"
+                :max="endDatePicker"
+                color="primary"
+                locale="pt-BR"
+                @update:model-value="menuStartDate = false"
+              />
+            </v-menu>
 
-            <v-text-field
-              v-model="endDate"
-              type="date"
-              label="Data Final"
-              density="comfortable"
-              variant="outlined"
-              hide-details
-              :min="startDate"
-              class="flex-grow-0"
-              style="max-width: 180px"
-            />
+            <v-menu
+              v-model="menuEndDate"
+              :close-on-content-click="false"
+              transition="scale-transition"
+              offset-y
+              min-width="auto"
+            >
+              <template #activator="{ props }">
+                <v-text-field
+                  :model-value="formattedEndDate"
+                  label="Data Final"
+                  prepend-inner-icon="mdi-calendar"
+                  readonly
+                  v-bind="props"
+                  density="comfortable"
+                  variant="outlined"
+                  hide-details
+                  class="date-field"
+                  color="primary"
+                  style="min-width: 220px"
+                />
+              </template>
+              <v-date-picker
+                v-model="endDatePicker"
+                :min="startDatePicker"
+                color="primary"
+                locale="pt-BR"
+                @update:model-value="menuEndDate = false"
+              />
+            </v-menu>
 
             <v-select
               v-model="step"
@@ -34,11 +72,13 @@
               item-title="label"
               item-value="value"
               label="Agrupamento"
+              prepend-inner-icon="mdi-chart-timeline-variant"
               density="comfortable"
               variant="outlined"
               hide-details
+              color="primary"
               class="flex-grow-0"
-              style="max-width: 150px"
+              style="max-width: 180px"
             />
 
             <v-switch
@@ -47,6 +87,7 @@
               color="primary"
               hide-details
               density="comfortable"
+              inset
             />
 
             <v-btn
@@ -55,32 +96,43 @@
               @click="refreshAll"
               prepend-icon="mdi-refresh"
               class="text-none"
+              size="large"
+              elevation="2"
             >
               Atualizar
             </v-btn>
 
             <v-spacer />
 
-            <div class="d-flex gap-2">
-              <v-btn
-                variant="outlined"
+            <v-chip-group class="d-flex gap-2">
+              <v-chip
                 color="primary"
-                size="small"
+                variant="outlined"
+                @click="setLastDays(7)"
+                prepend-icon="mdi-numeric-7-circle-outline"
+                class="cursor-pointer"
+              >
+                7 dias
+              </v-chip>
+              <v-chip
+                color="primary"
+                variant="outlined"
                 @click="setLastDays(30)"
-                class="text-none"
+                prepend-icon="mdi-calendar-month"
+                class="cursor-pointer"
               >
                 30 dias
-              </v-btn>
-              <v-btn
-                variant="outlined"
+              </v-chip>
+              <v-chip
                 color="primary"
-                size="small"
+                variant="outlined"
                 @click="setLastDays(90)"
-                class="text-none"
+                prepend-icon="mdi-calendar-range"
+                class="cursor-pointer"
               >
                 90 dias
-              </v-btn>
-            </div>
+              </v-chip>
+            </v-chip-group>
           </div>
         </v-card-text>
       </v-card>
@@ -332,6 +384,40 @@ const step = ref<'day' | 'week' | 'month'>('month');
 const limitTop = ref<number>(10);
 const loading = ref<boolean>(false);
 
+const menuStartDate = ref(false);
+const menuEndDate = ref(false);
+
+const startDatePicker = ref<Date>(startDefault);
+const endDatePicker = ref<Date>(today);
+
+const formattedStartDate = computed(() => {
+  return new Date(startDatePicker.value).toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  });
+});
+
+const formattedEndDate = computed(() => {
+  return new Date(endDatePicker.value).toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  });
+});
+
+watch(startDatePicker, (newDate) => {
+  if (newDate) {
+    startDate.value = fmt(new Date(newDate));
+  }
+});
+
+watch(endDatePicker, (newDate) => {
+  if (newDate) {
+    endDate.value = fmt(new Date(newDate));
+  }
+});
+
 const stepLabel = computed(() => {
   switch (step.value) {
     case 'day':
@@ -361,6 +447,8 @@ function setLastDays(days: number) {
   const end = new Date();
   const start = new Date();
   start.setDate(end.getDate() - days + 1);
+  startDatePicker.value = start;
+  endDatePicker.value = end;
   startDate.value = fmt(start);
   endDate.value = fmt(end);
   refreshAll();
@@ -440,6 +528,48 @@ onMounted(() => {
   border-bottom: 2px solid #f0f0f0;
 }
 
+.filter-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.98) 100%);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08) !important;
+
+  &:hover {
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12) !important;
+  }
+}
+
+.date-field {
+  :deep(.v-field) {
+    border-radius: 12px;
+    transition: all 0.3s ease;
+
+    &:hover {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+  }
+
+  :deep(.v-field--focused) {
+    box-shadow: 0 4px 12px rgba(var(--v-theme-primary), 0.2);
+  }
+
+  :deep(.v-field__prepend-inner) {
+    .v-icon {
+      color: rgb(var(--v-theme-primary));
+    }
+  }
+}
+
+.cursor-pointer {
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  }
+}
+
 .custom-table {
   max-height: 400px;
   overflow-y: auto;
@@ -474,5 +604,10 @@ onMounted(() => {
 
 .gap-3 {
   gap: 0.75rem;
+}
+
+:deep(.v-date-picker) {
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 }
 </style>
