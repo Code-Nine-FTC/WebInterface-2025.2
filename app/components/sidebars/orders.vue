@@ -323,7 +323,6 @@
 
 <script>
 import { useSidebarStore } from '~/stores/sidebar';
-
 import { useStorage } from '~/stores/storage';
 import { useOrders } from '~/stores/orders';
 import { useSection } from '~/stores/section';

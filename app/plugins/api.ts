@@ -1,6 +1,6 @@
 export default defineNuxtPlugin(() => {
   const auth = useAuthStore();
-  const tokenCookie = useCookie<string | null>("token");
+  const tokenCookie = useCookie<string | null>('token');
   const rc = useRuntimeConfig().public as any;
   const apiBase = rc.API_BASE || rc.apiBase || 'http://localhost:8080';
 
@@ -10,8 +10,8 @@ export default defineNuxtPlugin(() => {
       const t = auth.token || tokenCookie.value;
       if (t) {
         const headers = new Headers(options.headers || {});
-        headers.set("Authorization", `Bearer ${t}`);
-        if (!headers.has("Accept")) headers.set("Accept", "application/json");
+        headers.set('Authorization', `Bearer ${t}`);
+        if (!headers.has('Accept')) headers.set('Accept', 'application/json');
         options.headers = headers;
       }
     },

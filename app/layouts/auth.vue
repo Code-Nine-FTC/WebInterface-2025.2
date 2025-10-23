@@ -10,7 +10,7 @@
 
 <script>
 export default {
-  name: "auth",
+  name: 'auth',
 };
 </script>
 

@@ -6,11 +6,11 @@ module.exports = {
     'layouts/**/*.{vue,js,ts}',
     'pages/**/*.{vue,js,ts}',
     'stores/**/*.{js,ts}',
-    'composables/**/*.{js,ts}'
+    'composables/**/*.{js,ts}',
   ],
   theme: {
-    extend: {}
+    extend: {},
   },
   plugins: [],
-  prefix: 'tw-'
-}
+  prefix: 'tw-',
+};

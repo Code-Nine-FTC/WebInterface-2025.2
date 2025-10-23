@@ -1,17 +1,18 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+import { pt } from 'vuetify/locale';
+
 export default defineNuxtConfig({
-  compatibilityDate: "2025-07-15",
+  compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
 
-  css: ["~/assets/scss/main.scss"],
+  css: ['~/assets/scss/main.scss'],
 
-  // Configuração do App
   app: {
     head: {
-      title: "WebInterface 2025.2",
+      title: 'WebInterface 2025.2',
       meta: [
-        { charset: "utf-8" },
-        { name: "viewport", content: "width=device-width, initial-scale=1" },
+        { charset: 'utf-8' },
+        { name: 'viewport', content: 'width=device-width, initial-scale=1' },
       ],
     },
   },
@@ -42,10 +43,22 @@ export default defineNuxtConfig({
   },
 
   // Modules
-  modules: ["vuetify-nuxt-module", "@pinia/nuxt", "@nuxtjs/tailwindcss"],
+  modules: ['vuetify-nuxt-module', '@pinia/nuxt', '@nuxtjs/tailwindcss'],
+
+  vuetify: {
+    moduleOptions: {
+      /* module specific options */
+    },
+    vuetifyOptions: {
+      locale: {
+        locale: 'pt',
+        messages: { pt },
+      },
+    },
+  },
 
   // Build Configuration
   build: {
-    transpile: ["vuetify"],
+    transpile: ['vuetify'],
   },
 });
