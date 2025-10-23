@@ -1,8 +1,6 @@
 <template>
   <div class="pa-4 pa-md-6 bg-grey-lighten-4">
     <div class="mb-6">
-      <h1 class="text-h4 font-weight-bold text-grey-darken-3 mb-4">Dashboard de Análises</h1>
-
       <v-card class="elevation-2">
         <v-card-text class="pa-4">
           <div class="d-flex flex-wrap align-center gap-3">
