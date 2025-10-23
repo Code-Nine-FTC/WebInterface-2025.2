@@ -1,26 +1,14 @@
 <template>
-  <v-navigation-drawer
-    v-model="sidebar.isOpen"
-    location="right"
-    temporary
-    width="600"
-  >
+  <v-navigation-drawer v-model="sidebar.isOpen" location="right" temporary width="600">
     <v-toolbar flat density="comfortable">
-      <v-toolbar-title>{{
-        isEdit ? "Editar Fornecedor" : "Cadastrar Fornecedor"
-      }}</v-toolbar-title>
+      <v-toolbar-title>{{ isEdit ? 'Editar Fornecedor' : 'Cadastrar Fornecedor' }}</v-toolbar-title>
       <v-spacer />
       <v-btn icon="mdi-close" :disabled="loading" @click="closeAndReset" />
     </v-toolbar>
 
     <v-divider />
 
-    <v-form
-      ref="formRef"
-      v-model="formValid"
-      class="pa-4"
-      @submit.prevent="submit"
-    >
+    <v-form ref="formRef" v-model="formValid" class="pa-4" @submit.prevent="submit">
       <v-row dense>
         <v-col cols="12">
           <v-text-field
@@ -71,33 +59,15 @@
         </v-col>
 
         <v-col cols="12">
-          <v-alert
-            v-if="error"
-            type="error"
-            variant="tonal"
-            density="comfortable"
-            class="mb-2"
-          >
+          <v-alert v-if="error" type="error" variant="tonal" density="comfortable" class="mb-2">
             {{ error }}
           </v-alert>
         </v-col>
 
         <v-col cols="12" class="d-flex justify-end ga-2 mt-4">
-          <v-btn
-            type="button"
-            variant="text"
-            :disabled="loading"
-            @click="reset"
-          >
-            Limpar
-          </v-btn>
-          <v-btn
-            type="submit"
-            color="primary"
-            :loading="loading"
-            :disabled="!formValid"
-          >
-            {{ isEdit ? "Salvar Alterações" : "Salvar" }}
+          <v-btn type="button" variant="text" :disabled="loading" @click="reset">Limpar</v-btn>
+          <v-btn type="submit" color="primary" :loading="loading" :disabled="!formValid">
+            {{ isEdit ? 'Salvar Alterações' : 'Salvar' }}
           </v-btn>
         </v-col>
       </v-row>
@@ -106,13 +76,13 @@
 </template>
 
 <script>
-import { useSidebarStore } from "~/stores/sidebar";
-import { useSupplier } from "~/stores/supplier";
-import { formatCNPJ, formatTelefone } from "~/utils/index";
+import { useSidebarStore } from '~/stores/sidebar';
+import { useSupplier } from '~/stores/supplier';
+import { formatCNPJ, formatTelefone } from '~/utils/index';
 
 export default {
-  name: "FormSidebar",
-  emits: ["created", "updated"],
+  name: 'FormSidebar',
+  emits: ['created', 'updated'],
   data() {
     return {
       sidebar: null,
@@ -122,31 +92,30 @@ export default {
       error: null,
       currentId: null,
       form: {
-        nomeFornecedor: "",
-        cnpj: "",
-        email: "",
-        telefone: "",
+        nomeFornecedor: '',
+        cnpj: '',
+        email: '',
+        telefone: '',
       },
       rules: {
-        required: (v) => !!v || v === 0 || "Obrigatório",
-        email: (v) =>
-          !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) || "E-mail inválido",
+        required: (v) => !!v || v === 0 || 'Obrigatório',
+        email: (v) => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) || 'E-mail inválido',
         cnpj: (v) => {
           if (!v) return true;
-          const digits = v.replace(/\D/g, "");
-          return digits.length === 14 || "CNPJ deve ter 14 dígitos";
+          const digits = v.replace(/\D/g, '');
+          return digits.length === 14 || 'CNPJ deve ter 14 dígitos';
         },
         telefone: (v) => {
           if (!v) return true;
-          const d = v.replace(/\D/g, "");
-          return d.length === 10 || d.length === 11 || "Telefone inválido";
+          const d = v.replace(/\D/g, '');
+          return d.length === 10 || d.length === 11 || 'Telefone inválido';
         },
       },
     };
   },
   computed: {
     isEdit() {
-      return this.sidebar?.payload?.mode === "edit";
+      return this.sidebar?.payload?.mode === 'edit';
     },
   },
   created() {
@@ -155,13 +124,13 @@ export default {
     this.prefillIfEdit();
   },
   watch: {
-    "sidebar.payload": {
+    'sidebar.payload': {
       deep: true,
       handler() {
         this.prefillIfEdit();
       },
     },
-    "sidebar.isOpen"(open) {
+    'sidebar.isOpen'(open) {
       if (!open) {
         // Ao fechar, limpa para próxima abertura
         setTimeout(() => this.reset(), 150);
@@ -173,11 +142,10 @@ export default {
       if (this.isEdit && this.sidebar.payload?.supplier) {
         const s = this.sidebar.payload.supplier;
         this.currentId = s.id;
-        this.form.nomeFornecedor =
-          s.name || s.nomeFornecedor || s.nomeFantasia || "";
-        this.form.cnpj = formatCNPJ(s.cnpj || "");
-        this.form.email = s.email || "";
-        this.form.telefone = formatTelefone(s.phoneNumber || s.telefone || "");
+        this.form.nomeFornecedor = s.name || s.nomeFornecedor || s.nomeFantasia || '';
+        this.form.cnpj = formatCNPJ(s.cnpj || '');
+        this.form.email = s.email || '';
+        this.form.telefone = formatTelefone(s.phoneNumber || s.telefone || '');
       } else if (!this.isEdit) {
         this.currentId = null;
         this.reset();
@@ -193,10 +161,10 @@ export default {
       this.error = null;
       this.currentId = null;
       this.form = {
-        nomeFornecedor: "",
-        cnpj: "",
-        email: "",
-        telefone: "",
+        nomeFornecedor: '',
+        cnpj: '',
+        email: '',
+        telefone: '',
       };
       if (this.$refs.formRef) this.$refs.formRef.resetValidation();
     },
@@ -215,25 +183,23 @@ export default {
         const payload = {
           name: this.form.nomeFornecedor,
           email: this.form.email.trim(),
-          phoneNumber: this.form.telefone.replace(/\D/g, ""),
-          cnpj: this.form.cnpj.replace(/\D/g, ""),
+          phoneNumber: this.form.telefone.replace(/\D/g, ''),
+          cnpj: this.form.cnpj.replace(/\D/g, ''),
         };
         if (this.isEdit && this.currentId) {
           const updated = await this.supplierStore.update({
             id: this.currentId,
             ...payload,
           });
-          this.$emit("updated", updated);
+          this.$emit('updated', updated);
         } else {
           const created = await this.supplierStore.create(payload);
-          this.$emit("created", created);
+          this.$emit('created', created);
         }
         this.sidebar.close();
         this.reset();
       } catch (e) {
-        this.error = this.isEdit
-          ? "Falha ao atualizar fornecedor"
-          : "Falha ao salvar fornecedor";
+        this.error = this.isEdit ? 'Falha ao atualizar fornecedor' : 'Falha ao salvar fornecedor';
         console.error(e);
       } finally {
         this.loading = false;

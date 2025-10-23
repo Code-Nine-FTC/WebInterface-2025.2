@@ -35,7 +35,12 @@ export const useOrders = defineStore('orders', () => {
     }
   }
 
-  async function create(payload: { orderNumber: string; consumerSectionId: number; itemQuantities: Record<string, number>; withdrawDay?: string }) {
+  async function create(payload: {
+    orderNumber: string;
+    consumerSectionId: number;
+    itemQuantities: Record<string, number>;
+    withdrawDay?: string;
+  }) {
     try {
       const res: any = await $api('/orders', {
         method: 'POST',

@@ -51,13 +51,15 @@ export const useConsumptionAnalyticsStore = defineStore('consumptionAnalytics', 
       summary.value = Array.isArray(arr)
         ? arr.map((r: any) => ({
             secaoId: Number(r.secaoId ?? r.sectionId ?? r.id),
-            secaoNome: String(r.secaoNome ?? r.nome ?? r.title ?? r.name ?? `#${r.secaoId ?? r.id}`),
+            secaoNome: String(
+              r.secaoNome ?? r.nome ?? r.title ?? r.name ?? `#${r.secaoId ?? r.id}`,
+            ),
             pedidos: Number(r.pedidos ?? r.orders ?? r.count ?? 0),
             quantidade: Number(r.quantidade ?? r.quantity ?? r.sum ?? 0),
           }))
         : [];
       // ordenar por quantidade(desc) depois pedidos(desc)
-      summary.value.sort((a, b) => (b.quantidade - a.quantidade) || (b.pedidos - a.pedidos));
+      summary.value.sort((a, b) => b.quantidade - a.quantidade || b.pedidos - a.pedidos);
 
       // Séries por seção
       const seriesRes = await $api('/api/analytics/secoes/series', {

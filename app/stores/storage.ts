@@ -1,21 +1,18 @@
-import { defineStore } from "pinia";
-import { ref } from "vue";
+import { defineStore } from 'pinia';
+import { ref } from 'vue';
 
-export const useStorage = defineStore("storage", () => {
+export const useStorage = defineStore('storage', () => {
   const items = ref<Array<any>>([]);
   const { $api } = useNuxtApp();
 
   async function list(payload: Record<string, any> = {}) {
     try {
       const params = new URLSearchParams();
-      if (payload.sectionId)
-        params.append("sectionId", String(payload.sectionId));
+      if (payload.sectionId) params.append('sectionId', String(payload.sectionId));
       if (payload.sectionIds?.length) {
-        payload.sectionIds.forEach((id: any) =>
-          params.append("sectionIds[]", String(id))
-        );
+        payload.sectionIds.forEach((id: any) => params.append('sectionIds[]', String(id)));
       }
-      const url = params.toString() ? `/items?${params.toString()}` : "/items";
+      const url = params.toString() ? `/items?${params.toString()}` : '/items';
       const res: any = await $api(url);
 
       if (Array.isArray(res)) items.value = res;
@@ -25,7 +22,7 @@ export const useStorage = defineStore("storage", () => {
 
       return items.value;
     } catch (e) {
-      console.error("Failed to list items:", e);
+      console.error('Failed to list items:', e);
       return [];
     }
   }
@@ -34,7 +31,7 @@ export const useStorage = defineStore("storage", () => {
     try {
       return await $api(`/items/${id}`);
     } catch (e) {
-      console.error("Failed to get item by id:", e);
+      console.error('Failed to get item by id:', e);
       throw e;
     }
   }
@@ -42,11 +39,11 @@ export const useStorage = defineStore("storage", () => {
   async function updateItem(id: number | string, payload: Record<string, any>) {
     try {
       return await $api(`/items/${id}`, {
-        method: "PUT",
+        method: 'PUT',
         body: payload,
       });
     } catch (e) {
-      console.error("Failed to update item:", e);
+      console.error('Failed to update item:', e);
       throw e;
     }
   }

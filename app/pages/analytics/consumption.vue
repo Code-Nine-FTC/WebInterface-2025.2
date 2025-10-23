@@ -81,90 +81,96 @@
       </v-card-text>
     </v-card>
   </div>
-  
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
-import BarGrouped from '~/components/charts/BarGrouped.vue'
-import { useConsumptionAnalyticsStore } from '~/stores/useConsumptionAnalyticsStore'
+import { computed, onMounted } from 'vue';
+import BarGrouped from '~/components/charts/BarGrouped.vue';
+import { useConsumptionAnalyticsStore } from '~/stores/useConsumptionAnalyticsStore';
 
-definePageMeta({ layout: 'default', middleware: 'auth' })
+definePageMeta({ layout: 'default', middleware: 'auth' });
 
-const store = useConsumptionAnalyticsStore()
+const store = useConsumptionAnalyticsStore();
 
 const startDate = computed({
   get: () => store.startDate,
   set: (v: any) => (store.startDate = v),
-}) as unknown as any
+}) as unknown as any;
 const endDate = computed({
   get: () => store.endDate,
   set: (v: any) => (store.endDate = v),
-}) as unknown as any
+}) as unknown as any;
 const onlyCompleted = computed({
   get: () => store.onlyCompleted,
   set: (v: boolean) => (store.onlyCompleted = v),
-})
+});
 const step = computed({
   get: () => store.step,
   set: (v: 'day' | 'week' | 'month') => (store.step = v),
-})
+});
 
 const steps = [
   { label: 'Dia', value: 'day' },
   { label: 'Semana', value: 'week' },
   { label: 'Mês', value: 'month' },
-] as const
+] as const;
 
-const loading = computed(() => store.loading)
-const error = computed(() => store.error)
+const loading = computed(() => store.loading);
+const error = computed(() => store.error);
 
-const barCategories = computed(() => (store.summary || []).map(s => s.secaoNome))
+const barCategories = computed(() => (store.summary || []).map((s) => s.secaoNome));
 const barSeries = computed(() => {
-  const sum = store.summary || []
+  const sum = store.summary || [];
   return [
     { name: 'Quantidade', data: sum.map((s: any) => Number(s.quantidade) || 0) },
     { name: 'Pedidos', data: sum.map((s: any) => Number(s.pedidos) || 0) },
-  ]
-})
+  ];
+});
 
-const seriesCategories = computed(() => store.seriesCategories as string[])
-const seriesData = computed(() => (store.series || []).map((s: any) => ({ name: s.name, data: s.data })))
+const seriesCategories = computed(() => store.seriesCategories as string[]);
+const seriesData = computed(() =>
+  (store.series || []).map((s: any) => ({ name: s.name, data: s.data })),
+);
 
 const stepLabel = computed(() => {
   switch (store.step) {
-    case 'day': return 'dia'
-    case 'week': return 'semana'
-    default: return 'mês'
+    case 'day':
+      return 'dia';
+    case 'week':
+      return 'semana';
+    default:
+      return 'mês';
   }
-})
+});
 
 function format(d: Date) {
-  return d.toISOString().split('T')[0]
+  return d.toISOString().split('T')[0];
 }
 
 function setLastDays(days: number) {
-  const end = new Date()
-  const start = new Date()
-  start.setDate(end.getDate() - (days - 1))
-  store.startDate = format(start)
-  store.endDate = format(end)
-  refresh()
+  const end = new Date();
+  const start = new Date();
+  start.setDate(end.getDate() - (days - 1));
+  store.startDate = format(start);
+  store.endDate = format(end);
+  refresh();
 }
 
 function refresh() {
-  store.fetchData()
+  store.fetchData();
 }
 
 onMounted(() => {
   if (!store.startDate || !store.endDate) {
-    setLastDays(30)
+    setLastDays(30);
   } else {
-    refresh()
+    refresh();
   }
-})
+});
 </script>
 
 <style scoped>
-.gap-3 { gap: 12px; }
+.gap-3 {
+  gap: 12px;
+}
 </style>

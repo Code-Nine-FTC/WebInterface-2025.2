@@ -23,23 +23,9 @@
           hide-details="auto"
           required
         />
-        <v-btn
-          class="mt-4"
-          type="submit"
-          color="primary"
-          :loading="loading"
-          block
-        >
-          Entrar
-        </v-btn>
+        <v-btn class="mt-4" type="submit" color="primary" :loading="loading" block>Entrar</v-btn>
 
-        <v-alert
-          v-if="error"
-          type="error"
-          class="mt-3"
-          density="comfortable"
-          variant="tonal"
-        >
+        <v-alert v-if="error" type="error" class="mt-3" density="comfortable" variant="tonal">
           {{ error }}
         </v-alert>
       </v-form>
@@ -48,36 +34,30 @@
 </template>
 
 <script setup>
-definePageMeta({ layout: "auth", auth: false });
+definePageMeta({ layout: 'auth', auth: false });
 </script>
 
 <script>
-import { useAuthStore } from "~/stores/auth";
+import { useAuthStore } from '~/stores/auth';
 
 export default {
-  name: "LoginPage",
+  name: 'LoginPage',
   data() {
     return {
-      password: "",
-      email: "",
+      password: '',
+      email: '',
       error: null,
       loading: false,
       passwordRules: [
-        (value) =>
-          (value && value.length >= 6) ||
-          "A senha deve ter no mínimo 6 caracteres.",
-        (value) =>
-          (value && /[A-Za-z]/.test(value)) ||
-          "A senha deve conter pelo menos uma letra.",
-        (value) =>
-          (value && /[0-9]/.test(value)) ||
-          "A senha deve conter pelo menos um número.",
+        (value) => (value && value.length >= 6) || 'A senha deve ter no mínimo 6 caracteres.',
+        (value) => (value && /[A-Za-z]/.test(value)) || 'A senha deve conter pelo menos uma letra.',
+        (value) => (value && /[0-9]/.test(value)) || 'A senha deve conter pelo menos um número.',
       ],
       emailRules: [
-        (value) => (value && value.length > 0) || "O email é obrigatório.",
+        (value) => (value && value.length > 0) || 'O email é obrigatório.',
         (value) =>
           (value && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) ||
-          "Informe um email válido (ex.: usuario@dominio.com).",
+          'Informe um email válido (ex.: usuario@dominio.com).',
       ],
     };
   },
@@ -93,24 +73,22 @@ export default {
     async handleSubmit() {
       this.error = null;
       const emailValid = this.emailRules.every((r) => r(this.email) === true);
-      const passValid = this.passwordRules.every(
-        (r) => r(this.password) === true
-      );
+      const passValid = this.passwordRules.every((r) => r(this.password) === true);
       if (!emailValid || !passValid) {
-        this.error = "Por favor corrija os campos destacados.";
+        this.error = 'Por favor corrija os campos destacados.';
         return;
       }
 
       try {
         this.loading = true;
         await this.auth.login({ email: this.email, password: this.password });
-        this.$router.push("/home");
+        this.$router.push('/home');
       } catch (err) {
         this.error =
           err?.data?.message ||
           err?.message ||
-          "Falha ao efetuar login. Verifique suas credenciais.";
-        console.error("Login failed", err);
+          'Falha ao efetuar login. Verifique suas credenciais.';
+        console.error('Login failed', err);
       } finally {
         this.loading = false;
       }

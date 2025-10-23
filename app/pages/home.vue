@@ -70,7 +70,7 @@
       </v-table>
     </v-card>
 
-  <!-- Últimos Fornecedores -->
+    <!-- Últimos Fornecedores -->
     <v-card class="section-card pa-5" elevation="2">
       <div class="d-flex align-center mb-4">
         <v-icon icon="mdi-account-multiple" class="mr-2" />
@@ -107,14 +107,6 @@
         </template>
       </v-data-table>
     </v-card>
-    <div class="mt-6">
-      <NuxtLink to="/analytics" class="text-decoration-none">
-        <v-btn color="indigo" variant="flat">
-          <v-icon start icon="mdi-chart-bar" />
-          Análises
-        </v-btn>
-      </NuxtLink>
-    </div>
   </div>
 </template>
 
@@ -184,7 +176,7 @@ export default {
       const actions = [];
       const sidebar = useSidebarStore?.();
 
-        if (['ADMIN', 'MANAGER'].includes(this.userRole)) {
+      if (['ADMIN', 'MANAGER'].includes(this.userRole)) {
         actions.push(
           {
             label: 'Novo Fornecedor',
@@ -207,13 +199,13 @@ export default {
             run: () => this.$router.push('/users'),
           },
         );
-          if (this.userRole === 'ADMIN') {
-            actions.push({
-              label: 'Seções',
-              color: 'deep-purple',
-              run: () => this.$router.push('/sections'),
-            });
-          }
+        if (this.userRole === 'ADMIN') {
+          actions.push({
+            label: 'Seções',
+            color: 'deep-purple',
+            run: () => this.$router.push('/sections'),
+          });
+        }
       }
       return actions;
     },
