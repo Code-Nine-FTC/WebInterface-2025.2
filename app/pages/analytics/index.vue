@@ -136,7 +136,7 @@ watch([() => analytics.demandaSeries.categories, () => analytics.demandaSeries.s
   <div class="analytics-page">
     <h1 class="page-title">Análises</h1>
     <div class="actions-inline mb-2">
-      <NuxtLink to="/analytics/consumption" class="btn btn-primary">
+      <NuxtLink to="/analytics-consumption" class="btn btn-primary">
         Ver consumo por seção
       </NuxtLink>
     </div>
@@ -403,13 +403,4 @@ watch([() => analytics.demandaSeries.categories, () => analytics.demandaSeries.s
 
 .section { display: grid; gap: 10px; }
 .section h3 { font-weight: 600; font-size: 15px; }
-
-.chart-card {
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 8px;
-}
-
-/* chart container handled by component */
 </style>
