@@ -160,7 +160,7 @@ export default {
       menuItems: [
         { title: 'Home', icon: 'mdi-home', to: '/home', value: 'home' },
         {
-          title: 'Dashboard de Análises',
+          title: 'Análises e Consumo',
           icon: 'mdi-chart-line',
           to: '/dashboard',
           value: 'dashboard',
