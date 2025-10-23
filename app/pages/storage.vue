@@ -103,7 +103,6 @@
                     />
                   </template>
                 </v-tooltip>
-                <<<<<<< HEAD
                 <v-tooltip text="Lotes" location="top">
                   <template #activator="{ props }">
                     <v-btn
