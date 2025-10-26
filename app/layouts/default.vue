@@ -189,6 +189,12 @@ export default {
           to: '/orders',
           value: 'orders',
         },
+		{
+		title: 'Ordens de Compra',
+		icon: 'mdi-file-document-edit-outline',
+		to: '/purchase-orders',
+		value: 'purchase-orders',
+		},
         {
           title: 'Validades',
           icon: 'mdi-calendar-alert',
