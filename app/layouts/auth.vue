@@ -10,8 +10,8 @@
 
 <script>
 export default {
-  name: 'auth'
-}
+  name: 'auth',
+};
 </script>
 
 <style lang="scss" scoped>

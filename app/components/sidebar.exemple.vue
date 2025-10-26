@@ -1,10 +1,5 @@
 <template>
-  <v-navigation-drawer
-    v-model="sidebar.isOpen"
-    location="right"
-    temporary
-    width="600"
-  >
+  <v-navigation-drawer v-model="sidebar.isOpen" location="right" temporary width="600">
     <v-toolbar flat>
       <v-toolbar-title>Adicionar item</v-toolbar-title>
       <v-spacer />
@@ -22,6 +17,6 @@
 </template>
 
 <script setup lang="ts">
-import { useSidebarStore } from '~/stores/sidebar'
-const sidebar = useSidebarStore()
+import { useSidebarStore } from '~/stores/sidebar';
+const sidebar = useSidebarStore();
 </script>

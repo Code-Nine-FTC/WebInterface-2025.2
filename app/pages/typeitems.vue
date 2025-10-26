@@ -2,9 +2,7 @@
   <div class="max-w-6xl mx-auto p-6">
     <v-card class="bg-white rounded-lg shadow-md pa-4 mb-6">
       <div class="d-flex flex-row items-center gap-3">
-        <v-chip variant="elevated" color="primary">
-          Tipos de Item
-        </v-chip>
+        <v-chip variant="elevated" color="primary">Tipos de Item</v-chip>
       </div>
       <div class="d-flex flex-row items-center gap-2 mt-2">
         <v-text-field
@@ -24,7 +22,9 @@
           class="flex-shrink-0 ml-2"
           height="38"
           @click="openSidebar"
-        >Cadastrar</v-btn>
+        >
+          Cadastrar
+        </v-btn>
       </div>
     </v-card>
 
@@ -32,17 +32,10 @@
       <div class="px-4 py-3 border-b border-slate-100">
         <div class="d-flex items-center gap-2 text-xs text-slate-500">
           <v-icon icon="mdi-shape" class="mr-1" />
-          <span> Tipos de Item </span>
+          <span>Tipos de Item</span>
           <div class="ml-auto flex items-center gap-2">
-            <span class="hidden sm:inline text-slate-500">
-              Última atualização:
-            </span>
-            <v-chip
-              color="green"
-              size="x-small"
-              variant="tonal"
-              class="font-medium"
-            >
+            <span class="hidden sm:inline text-slate-500">Última atualização:</span>
+            <v-chip color="green" size="x-small" variant="tonal" class="font-medium">
               {{ formatDate(Date.now()) }}
             </v-chip>
             <v-btn
@@ -102,28 +95,34 @@
 </template>
 
 <script>
-import { useTypeItem } from "~/stores/typeItem";
-import TypeItemSidebar from "~/components/sidebars/typeitem.vue";
-import { useSidebarStore } from "~/stores/sidebar";
-import { useAuthStore } from "~/stores/auth";
+import { useTypeItem } from '~/stores/typeItem';
+import TypeItemSidebar from '~/components/sidebars/typeitem.vue';
+import { useSidebarStore } from '~/stores/sidebar';
+import { useAuthStore } from '~/stores/auth';
 
 export default {
-  name: "TypeItems",
+  name: 'TypeItems',
   components: {
-    TypeItemSidebar
+    TypeItemSidebar,
   },
   data() {
     return {
       data: [],
       loading: false,
-      search: "",
+      search: '',
       headers: [
-        { title: "ID", key: "id" },
-        { title: "Nome", key: "name" },
-        { title: "Status", key: "isActive" },
-        { title: "Última atualização", key: "lastUpdate" },
-        { title: "Usuário", key: "lastUserName" },
-        { title: "", key: "actions", sortable: false, align: "center", width: 60 },
+        { title: 'ID', key: 'id' },
+        { title: 'Nome', key: 'name' },
+        { title: 'Status', key: 'isActive' },
+        { title: 'Última atualização', key: 'lastUpdate' },
+        { title: 'Usuário', key: 'lastUserName' },
+        {
+          title: '',
+          key: 'actions',
+          sortable: false,
+          align: 'center',
+          width: 60,
+        },
       ],
       sidebar: null,
     };
@@ -138,22 +137,18 @@ export default {
   },
   computed: {
     filteredData() {
-      const q = (this.search || "").toString().toLowerCase().trim();
+      const q = (this.search || '').toString().toLowerCase().trim();
       let items = this.data;
       const user = this.authStore?.user;
       if (user && user.role !== 'ADMIN') {
-        const userSectionIds = (user.sections || []).map(s => s.id);
-        items = items.filter(item => userSectionIds.includes(item.sectionId));
+        const userSectionIds = (user.sections || []).map((s) => s.id);
+        items = items.filter((item) => userSectionIds.includes(item.sectionId));
       }
       if (!q) return items;
       return items.filter((item) => {
-        return ["name", "description"].some((key) => {
+        return ['name', 'description'].some((key) => {
           const v = item?.[key];
-          return (
-            v !== undefined &&
-            v !== null &&
-            v.toString().toLowerCase().includes(q)
-          );
+          return v !== undefined && v !== null && v.toString().toLowerCase().includes(q);
         });
       });
     },
@@ -164,34 +159,34 @@ export default {
       try {
         this.data = await this.typeItemStore.list();
       } catch (e) {
-        console.error("Error fetching type items:", e);
+        console.error('Error fetching type items:', e);
       } finally {
         this.loading = false;
       }
     },
     formatDate(value) {
-      if (!value) return "—";
+      if (!value) return '—';
       try {
         const d = new Date(value);
-        return d.toLocaleString("pt-BR", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
+        return d.toLocaleString('pt-BR', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
         });
       } catch {
         return value;
       }
     },
     openSidebar() {
-      this.sidebar?.open({ mode: "create" });
+      this.sidebar?.open({ mode: 'create' });
     },
     editTypeItem(event, row) {
       const item = row.item;
       console.log('editTypeItem chamado:', item);
       if (!item || typeof item !== 'object') return;
-      this.sidebar?.open({ mode: "edit", typeItemId: item.id });
+      this.sidebar?.open({ mode: 'edit', typeItemId: item.id });
     },
     async removeTypeItem(item) {
       if (confirm('Tem certeza que deseja remover este tipo de item?')) {

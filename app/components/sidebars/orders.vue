@@ -1,13 +1,8 @@
 <template>
-  <v-navigation-drawer
-    v-model="sidebar.isOpen"
-    location="right"
-    temporary
-    width="720"
-  >
+  <v-navigation-drawer v-model="sidebar.isOpen" location="right" temporary width="720">
     <v-toolbar flat density="comfortable">
       <v-toolbar-title>
-        {{ isView ? "Detalhes do Pedido" : isEdit ? "Editar Pedido" : "Cadastrar Pedido" }}
+        {{ isView ? 'Detalhes do Pedido' : isEdit ? 'Editar Pedido' : 'Cadastrar Pedido' }}
       </v-toolbar-title>
       <v-spacer />
       <v-btn icon="mdi-close" :disabled="loading" @click="closeAndReset" />
@@ -22,20 +17,43 @@
           <div class="d-flex flex-column gap-1">
             <div class="d-flex align-center gap-2">
               <v-icon size="small" color="primary">mdi-pound</v-icon>
-              <span class="text-body-2"><strong>Código:</strong> {{ orderDetails?.id }}</span>
+              <span class="text-body-2">
+                <strong>Código:</strong>
+                {{ orderDetails?.id }}
+              </span>
+            </div>
+            <div class="d-flex align-center gap-2">
+              <v-icon size="small" color="primary">mdi-tag</v-icon>
+              <span class="text-body-2">
+                <strong>Número:</strong>
+                <template v-if="displayOrderNumber">{{ displayOrderNumber }}</template>
+                <template v-else>—</template>
+              </span>
             </div>
             <div class="d-flex align-center gap-2">
               <v-icon size="small" color="primary">mdi-calendar</v-icon>
-              <span class="text-body-2"><strong>Retirada:</strong> {{ formatDate(orderDetails?.withdrawDay) }}</span>
+              <span class="text-body-2">
+                <strong>Retirada:</strong>
+                {{ formatDate(orderDetails?.withdrawDay) }}
+              </span>
             </div>
             <div class="d-flex align-center gap-2">
               <v-icon size="small" color="primary">mdi-information</v-icon>
-              <span class="text-body-2"><strong>Status:</strong> {{ statusLabel(orderDetails?.status) }}</span>
+              <span class="text-body-2">
+                <strong>Status:</strong>
+                {{ statusLabel(orderDetails?.status) }}
+              </span>
             </div>
-            <div v-if="supplierNames.length" class="d-flex align-center gap-2">
-              <v-icon size="small" color="primary">mdi-domain</v-icon>
-              <span class="text-body-2"><strong>Fornecedores:</strong> {{ supplierNames.join(', ') }}</span>
+            <div class="d-flex align-center gap-2">
+              <v-icon size="small" color="primary">mdi-view-grid</v-icon>
+              <span class="text-body-2">
+                <strong>Seção:</strong>
+                <template v-if="consumerSection?.title">{{ consumerSection.title }}</template>
+                <template v-else-if="consumerSection?.id">#{{ consumerSection.id }}</template>
+                <template v-else>não informada</template>
+              </span>
             </div>
+
             <div class="d-flex flex-column gap-2 mt-3">
               <div class="text-caption text-medium-emphasis">Atualizar status</div>
               <v-btn-toggle
@@ -83,6 +101,33 @@
         </v-card>
       </v-dialog>
 
+      <v-dialog v-model="completeDialog" max-width="420">
+        <v-card>
+          <v-card-title class="text-subtitle-1">Concluir pedido?</v-card-title>
+          <v-card-text>
+            Selecione a data de conclusão do pedido:
+            <v-text-field
+              v-model="completeDate"
+              label="Data de conclusão"
+              type="date"
+              variant="outlined"
+              density="comfortable"
+              class="mt-2"
+            />
+            <div class="text-caption text-medium-emphasis mt-2">
+              Se não selecionar, será usada a data atual.
+            </div>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer />
+            <v-btn variant="text" @click="completeDialog = false">Voltar</v-btn>
+            <v-btn color="primary" :loading="loading" @click="confirmCompleteAction">
+              Confirmar
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+
       <!-- Snackbar de feedback -->
       <v-snackbar v-model="snack.show" :color="snack.color" timeout="2500">
         {{ snack.text }}
@@ -93,7 +138,7 @@
           <tr>
             <th class="text-left">Item</th>
             <th class="text-left">Unidade</th>
-            <th class="text-left" style="width:160px">Quantidade</th>
+            <th class="text-left" style="width: 160px">Quantidade</th>
           </tr>
         </thead>
         <tbody>
@@ -119,18 +164,39 @@
     <!-- Modo Criação/Edição -->
     <v-form v-else ref="formRef" v-model="formValid" class="pa-4" @submit.prevent="submit">
       <v-row dense>
-        <v-col cols="12">
-          <v-select
-            v-model="form.supplierId"
-            label="Fornecedor"
-            :items="supplierOptions"
-            item-title="label"
-            item-value="id"
-            :loading="suppliersLoading"
+        <v-col cols="12" md="6">
+          <v-text-field
+            v-model="form.orderNumber"
+            label="Número do Pedido"
+            :rules="[rules.required]"
             variant="outlined"
             density="comfortable"
             hide-details="auto"
-            placeholder="Selecione o fornecedor"
+          />
+        </v-col>
+        <v-col cols="12" md="6">
+          <v-text-field
+            v-model="form.withdrawDay"
+            type="date"
+            label="Data de Retirada (opcional)"
+            variant="outlined"
+            density="comfortable"
+            hide-details="auto"
+          />
+        </v-col>
+        <v-col cols="12">
+          <v-select
+            v-model="form.consumerSectionId"
+            label="Seção Consumidora"
+            :items="consumerSectionOptions"
+            item-title="title"
+            item-value="id"
+            :loading="consumersLoading"
+            variant="outlined"
+            density="comfortable"
+            hide-details="auto"
+            :hint="consumersHint"
+            persistent-hint
           />
         </v-col>
 
@@ -166,12 +232,17 @@
                     style="max-width: 140px"
                     @input="normalizePickQty"
                   />
-                  <v-btn color="primary" variant="elevated" @click="addPickedItem" :disabled="!canAddPick">
+                  <v-btn
+                    color="primary"
+                    variant="elevated"
+                    @click="addPickedItem"
+                    :disabled="!canAddPick"
+                  >
                     Adicionar
                   </v-btn>
                 </div>
                 <div class="text-caption text-medium-emphasis">
-                  Dica: você pode procurar pelo nome, tipo, seção ou fornecedor do item.
+                  Dica: você pode procurar pelo nome, tipo ou seção do item.
                 </div>
               </div>
             </v-card-text>
@@ -188,8 +259,8 @@
                 <th class="text-left">Item</th>
                 <th class="text-left">Unidade</th>
                 <th class="text-left">Estoque Atual</th>
-                <th class="text-left" style="width:160px">Quantidade</th>
-                <th class="text-right" style="width:70px">Ações</th>
+                <th class="text-left" style="width: 160px">Quantidade</th>
+                <th class="text-right" style="width: 70px">Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -206,10 +277,10 @@
                   </div>
                 </td>
                 <td>
-                  <span>{{ it.measure || "—" }}</span>
+                  <span>{{ it.measure || '—' }}</span>
                 </td>
                 <td>
-                  <span>{{ it.currentStock ?? "—" }}</span>
+                  <span>{{ it.currentStock ?? '—' }}</span>
                 </td>
                 <td>
                   <v-text-field
@@ -235,103 +306,121 @@
         </v-col>
 
         <v-col cols="12" class="d-flex justify-end ga-2 mt-4">
-          <v-btn type="button" variant="text" :disabled="loading" @click="reset">
-            Limpar
-          </v-btn>
-          <v-btn type="submit" color="primary" :loading="loading" :disabled="!formValid || !canSubmit">
-            {{ isEdit ? "Salvar Alterações" : "Salvar Pedido" }}
+          <v-btn type="button" variant="text" :disabled="loading" @click="reset">Limpar</v-btn>
+          <v-btn
+            type="submit"
+            color="primary"
+            :loading="loading"
+            :disabled="!formValid || !canSubmit"
+          >
+            {{ isEdit ? 'Salvar Alterações' : 'Salvar Pedido' }}
           </v-btn>
         </v-col>
       </v-row>
     </v-form>
   </v-navigation-drawer>
-  
 </template>
 
 <script>
-import { useSidebarStore } from "~/stores/sidebar";
-import { useSupplier } from "~/stores/supplier";
-import { useStorage } from "~/stores/storage";
-import { useOrders } from "~/stores/orders";
+import { useSidebarStore } from '~/stores/sidebar';
+import { useStorage } from '~/stores/storage';
+import { useOrders } from '~/stores/orders';
+import { useSection } from '~/stores/section';
+import { useAuthStore } from '~/stores/auth';
 
 export default {
-  name: "OrdersSidebar",
-  emits: ["created", "updated"],
+  name: 'OrdersSidebar',
+  emits: ['created', 'updated'],
   data() {
     return {
       sidebar: null,
-      supplierStore: null,
       storageStore: null,
-  suppliersLoading: false,
       itemsLoading: false,
       loading: false,
       formValid: true,
       error: null,
       orderDetails: null,
       orderItems: [],
-      supplierNames: [],
+
       selectedStatus: null,
       confirmCancel: false,
+      completeDialog: false,
       pendingNewStatus: null,
       snack: { show: false, color: 'success', text: '' },
-      statusOptions: [
-        { value: 'APPROVED', label: 'Aprovado', icon: 'mdi-check-circle', color: 'green' },
-        { value: 'PROCESSING', label: 'Processando', icon: 'mdi-cog', color: 'blue' },
-        { value: 'COMPLETED', label: 'Completo', icon: 'mdi-check-all', color: 'purple' },
-        { value: 'CANCELLED', label: 'Cancelado', icon: 'mdi-cancel', color: 'red' },
-      ],
       form: {
-        supplierId: null,
-        items: [], // { itemId, name, measure, currentStock, qtd }
+        orderNumber: '',
+        consumerSectionId: null,
+        withdrawDay: '',
+        items: [],
       },
       pick: {
         itemId: null,
         qtd: 1,
       },
-      suppliers: [],
+      completeDate: null,
+
       items: [],
+      consumers: [],
+      consumersLoading: false,
+      consumersHint: '',
+      consumerSection: null,
+      ORDER_STATUS: {
+        APPROVED: {
+          label: 'Aprovado',
+          color: 'green',
+          icon: 'mdi-check-circle',
+          next: ['PROCESSING', 'CANCELLED'],
+        },
+        PROCESSING: {
+          label: 'Processando',
+          color: 'blue',
+          icon: 'mdi-cog',
+          next: ['COMPLETED', 'CANCELLED'],
+        },
+        COMPLETED: { label: 'Concluído', color: 'purple', icon: 'mdi-check-all', next: [] },
+        CANCELLED: { label: 'Cancelado', color: 'red', icon: 'mdi-cancel', next: [] },
+        PENDING: {
+          label: 'Pendente',
+          color: 'grey',
+          icon: 'mdi-timer-sand',
+          next: ['APPROVED', 'PROCESSING', 'CANCELLED'],
+        },
+      },
       rules: {
-        required: (v) => !!v || v === 0 || "Obrigatório",
+        required: (v) => !!v || v === 0 || 'Obrigatório',
         intQty: (v) => {
           const n = Number(v);
-          return Number.isInteger(n) && n > 0 || "Quantidade deve ser inteira e maior que 0";
+          return (Number.isInteger(n) && n > 0) || 'Quantidade deve ser inteira e maior que 0';
         },
       },
     };
   },
   computed: {
     isEdit() {
-      return this.sidebar?.payload?.mode === "edit";
+      return this.sidebar?.payload?.mode === 'edit';
     },
     isView() {
-      return this.sidebar?.payload?.mode === "view";
+      return this.sidebar?.payload?.mode === 'view';
     },
-    currentStatusUpper() {
-      return this.normalizeStatusKey(this.orderDetails?.status || 'PENDING');
+    currentStatus() {
+      return this.normalizeStatusKey(this.orderDetails?.status);
+    },
+    statusMeta() {
+      return this.ORDER_STATUS[this.currentStatus] || this.ORDER_STATUS.PENDING;
     },
     isTerminalStatus() {
-      return this.currentStatusUpper === 'COMPLETED' || this.currentStatusUpper === 'CANCELLED';
+      return ['COMPLETED', 'CANCELLED'].includes(this.currentStatus);
     },
-    supplierOptions() {
-      return (this.suppliers || [])
-        .filter((s) => (s.name || s.nomeFantasia || "") !== "Usuario de Migração")
-        .map((s) => ({ id: s.id, label: s.name || s.nomeFantasia || s.razaoSocial || `#${s.id}` }));
-    },
-    itemOptions() {
-      return (this.items || []).map((it) => ({
-        id: it.itemId ?? it.id,
-        label: `${it.name || it.itemName || `#${it.itemId || it.id}`} • ${it.measure || it.unit || "un"} • stock: ${it.currentStock ?? it.qtd ?? "?"}`,
+    statusOptions() {
+      const opts = [this.currentStatus, ...(this.statusMeta.next || [])];
+      return opts.map((key) => ({
+        value: key,
+        label: this.ORDER_STATUS[key].label,
+        icon: this.ORDER_STATUS[key].icon,
+        color: this.ORDER_STATUS[key].color,
       }));
     },
-    canAddPick() {
-      return !!(this.pick.itemId && Number.isInteger(this.pick.qtd) && this.pick.qtd > 0);
-    },
-    canSubmit() {
-      // Fornecedor é opcional; só validamos itens com quantidades inteiras > 0
-      return this.form.items.length > 0 && this.form.items.every((i) => Number.isInteger(i.qtd) && i.qtd > 0);
-    },
     orderDetailsItems() {
-      // Prioriza a lista vinda de /orders/items/:id
       if (Array.isArray(this.orderItems) && this.orderItems.length) {
         return this.orderItems.map((it) => {
           const itemId = it.itemId ?? it.id;
@@ -345,7 +434,6 @@ export default {
           };
         });
       }
-      // Fallback: derivar de orderDetails.itemQuantities
       if (this.orderDetails?.itemQuantities) {
         return Object.entries(this.orderDetails.itemQuantities).map(([k, v]) => {
           const itemId = Number(k);
@@ -361,183 +449,104 @@ export default {
       }
       return [];
     },
+
+    itemOptions() {
+      return (this.items || []).map((i) => ({
+        id: i.itemId ?? i.id,
+        label: i.name || i.itemName || i.itemCode || `#${i.itemId ?? i.id}`,
+      }));
+    },
+    canAddPick() {
+      const id = this.pick?.itemId;
+      const qtd = Number(this.pick?.qtd ?? 0);
+      if (!id) return false;
+      if (!Number.isFinite(qtd) || !Number.isInteger(qtd) || qtd < 1) return false;
+      const base = (this.items || []).find((x) => (x.itemId ?? x.id) === id);
+      return Boolean(base);
+    },
+
+    canSubmit() {
+      return Boolean(
+        this.form.orderNumber &&
+          this.form.consumerSectionId &&
+          Array.isArray(this.form.items) &&
+          this.form.items.length > 0,
+      );
+    },
+    consumerSectionOptions() {
+      return (this.consumers || []).map((c) => ({
+        id: c.id,
+        title: c.title || c.name || `#${c.id}`,
+      }));
+    },
+    displayOrderNumber() {
+      const o = this.orderDetails || {};
+      return (
+        o.orderNumber ||
+        o.numero ||
+        o.number ||
+        (o.metadata && (o.metadata.orderNumber || o.metadata.numero || o.metadata.number)) ||
+        null
+      );
+    },
   },
   async created() {
     this.sidebar = useSidebarStore();
-    this.supplierStore = useSupplier();
     this.storageStore = useStorage();
     this.ordersStore = useOrders();
-    await this.fetchSuppliers();
+    this.sectionStore = useSection();
+    this.auth = useAuthStore();
     await this.fetchItems();
+    await this.fetchConsumers();
   },
   watch: {
-    "sidebar.isOpen"(open) {
+    'sidebar.isOpen'(open) {
       if (!open) setTimeout(() => this.reset(), 150);
     },
-    "sidebar.payload": {
+    'sidebar.payload': {
       deep: true,
       async handler(val) {
-        if (val?.mode === 'view' && val.orderId != null) {
-          try {
-            this.loading = true;
-            const data = await this.ordersStore.getById(val.orderId);
-            this.orderDetails = data || null;
-            // Busca itens do pedido, como no mobile
-            this.orderItems = await this.ordersStore.getItemsByOrderId(val.orderId);
-            // Busca nomes de fornecedores, se existir supplierIds no pedido
-            const supplierIds = Array.isArray(this.orderDetails?.supplierIds) ? this.orderDetails.supplierIds : [];
-            const names = [];
-            for (const sid of supplierIds) {
-              try {
-                const s = await this.supplierStore.getById(sid);
-                let name = null;
-                if (s && typeof s === 'object') {
-                  if (s.name && String(s.name).trim()) name = String(s.name);
-                  else if (s.nomeFantasia && String(s.nomeFantasia).trim()) name = String(s.nomeFantasia);
-                  else if (s.razaoSocial && String(s.razaoSocial).trim()) name = String(s.razaoSocial);
-                }
-                names.push(name || `Fornecedor não encontrado (ID ${sid})`);
-              } catch {
-                names.push(`Fornecedor não encontrado (ID ${sid})`);
-              }
-            }
-            this.supplierNames = names;
-            // Ajusta toggle conforme status atual
-            const cur = this.currentStatusUpper;
-            const exists = this.statusOptions.some(o => o.value === cur);
-            this.selectedStatus = exists ? cur : null;
-          } catch (e) {
-            this.orderDetails = null;
-            this.orderItems = [];
-            this.supplierNames = [];
-            this.selectedStatus = null;
-          } finally {
-            this.loading = false;
-          }
-        }
-      }
-    }
+        if (!this.sidebar.isOpen) return;
+        await this.loadOrderDetails(val);
+      },
+    },
   },
   methods: {
     normalizeStatusKey(s) {
-      const x = String(s || '').toUpperCase();
-      if (["PENDENTE", "PENDING"].includes(x)) return 'PENDING';
-      if (["APROVADO", "APPROVED"].includes(x)) return 'APPROVED';
-      if (["PROCESSANDO", "PROCESSING"].includes(x)) return 'PROCESSING';
-      if (["CONCLUIDO", "CONCLUÍDO", "COMPLETED"].includes(x)) return 'COMPLETED';
-      if (["CANCELADO", "CANCELLED"].includes(x)) return 'CANCELLED';
-      return 'PENDING';
+      return typeof s === 'string' && this.ORDER_STATUS[s.toUpperCase()]
+        ? s.toUpperCase()
+        : 'PENDING';
     },
-    formatDate(value) {
-      if (!value) return "—";
-      try {
-        const d = new Date(value);
-        return d.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
-      } catch {
-        return String(value);
-      }
-    },
-    allowedNext(cur) {
-      // Define transições válidas a partir do estado atual
-      switch (cur) {
-        case 'PENDING':
-          return ['APPROVED', 'PROCESSING', 'CANCELLED'];
-        case 'APPROVED':
-          return ['PROCESSING', 'CANCELLED'];
-        case 'PROCESSING':
-          return ['COMPLETED', 'CANCELLED'];
-        case 'COMPLETED':
-        case 'CANCELLED':
-          return [];
-        default:
-          return ['APPROVED', 'PROCESSING', 'COMPLETED', 'CANCELLED'];
-      }
+    statusLabel(s) {
+      const key = this.normalizeStatusKey(s);
+      return this.ORDER_STATUS[key]?.label || '—';
     },
     isOptionDisabled(target) {
-      const cur = this.currentStatusUpper;
-      if (target === cur) return false;
-      if (cur === 'COMPLETED' || cur === 'CANCELLED') return true;
-      return !this.allowedNext(cur).includes(target);
+      if (this.isTerminalStatus) return true;
+      if (target === this.currentStatus) return false;
+      return !this.statusMeta.next.includes(target);
     },
     async handleStatusToggle(newVal) {
-      const cur = this.currentStatusUpper;
-      if (!newVal || newVal === cur) return;
+      if (!newVal || newVal === this.currentStatus) return;
       if (newVal === 'CANCELLED') {
         this.pendingNewStatus = newVal;
         this.confirmCancel = true;
         return;
       }
-      await this.doUpdateStatus(newVal);
+      if (newVal === 'COMPLETED') {
+        this.pendingNewStatus = newVal;
+        this.completeDialog = true;
+        return;
+      }
+      await this.changeStatus(newVal);
     },
     async confirmCancelAction() {
-      try {
-        if (!this.pendingNewStatus) return;
-        await this.doUpdateStatus(this.pendingNewStatus);
-      } finally {
-        this.confirmCancel = false;
-        this.pendingNewStatus = null;
-      }
+      if (!this.pendingNewStatus) return;
+      await this.changeStatus(this.pendingNewStatus);
+      this.confirmCancel = false;
+      this.pendingNewStatus = null;
     },
-    async doUpdateStatus(newStatus) {
-      if (!this.orderDetails?.id) return;
-      try {
-        this.loading = true;
-        const updated = await this.ordersStore.updateStatus(this.orderDetails.id, String(newStatus).toUpperCase());
-        const statusApplied = (updated?.status || newStatus);
-        // opcionalmente refetch para garantir sincronismo
-        try {
-          const fresh = await this.ordersStore.getById(this.orderDetails.id);
-          if (fresh) this.orderDetails = { ...this.orderDetails, ...fresh };
-        } catch {}
-        this.orderDetails = { ...this.orderDetails, status: statusApplied };
-        this.selectedStatus = statusApplied;
-        // feedback
-        this.snack = { show: true, color: 'success', text: 'Status atualizado' };
-        // emite atualização para a lista
-        this.$emit('updated', {
-          id: this.orderDetails.id,
-          status: statusApplied,
-          updatedAt: Date.now(),
-          withdrawDay: this.orderDetails.withdrawDay,
-        });
-      } catch (e) {
-        console.error('Erro ao atualizar status:', e);
-        this.snack = { show: true, color: 'error', text: 'Falha ao atualizar status' };
-        // reverter seleção visual
-        const cur = this.currentStatusUpper;
-        const exists = this.statusOptions.some(o => o.value === cur);
-        this.selectedStatus = exists ? cur : null;
-      } finally {
-        this.loading = false;
-      }
-    },
-    statusLabel(s) {
-      const x = String(s || '').toUpperCase();
-      const map = {
-        PENDENTE: 'Pendente',
-        PENDING: 'Pendente',
-        APROVADO: 'Aprovado',
-        APPROVED: 'Aprovado',
-        PROCESSING: 'Processando',
-        PROCESSANDO: 'Processando',
-        CONCLUIDO: 'Concluído',
-        CONCLUÍDO: 'Concluído',
-        COMPLETED: 'Concluído',
-        CANCELADO: 'Cancelado',
-        CANCELLED: 'Cancelado',
-      };
-      return map[x] || s || '—';
-    },
-    async fetchSuppliers() {
-      this.suppliersLoading = true;
-      try {
-        this.suppliers = (await this.supplierStore.list()) || [];
-      } catch (e) {
-        this.suppliers = [];
-      } finally {
-        this.suppliersLoading = false;
-      }
-    },
+
     async fetchItems() {
       this.itemsLoading = true;
       try {
@@ -548,6 +557,32 @@ export default {
         this.itemsLoading = false;
       }
     },
+    async fetchConsumers() {
+      this.consumersLoading = true;
+      this.consumersHint = '';
+      try {
+        this.consumers = await this.sectionStore.listConsumers();
+        if (!this.consumers?.length) {
+          this.consumersHint =
+            'Nenhuma seção consumidora disponível. Recarregue ou contate o admin.';
+        }
+      } catch (e) {
+        const code = e?.status || e?.response?.status;
+        if (code === 403) {
+          const sessionSection = this.auth?.user?.sections?.[0];
+          if (sessionSection?.id) {
+            this.form.consumerSectionId = Number(sessionSection.id);
+            this.consumersHint = `Sem permissão para listar. Usando seção da sessão: ${sessionSection.title || sessionSection.name || '#' + sessionSection.id}`;
+          } else {
+            this.consumersHint = 'Sem permissão para listar seções consumidoras.';
+          }
+        } else {
+          this.consumersHint = 'Falha ao carregar seções consumidoras.';
+        }
+      } finally {
+        this.consumersLoading = false;
+      }
+    },
     closeAndReset() {
       this.sidebar.close();
       this.reset();
@@ -556,13 +591,15 @@ export default {
       this.error = null;
       this.orderDetails = null;
       this.orderItems = [];
-      this.supplierNames = [];
       this.selectedStatus = null;
       this.confirmCancel = false;
+      this.completeDialog = false;
       this.pendingNewStatus = null;
       this.snack = { show: false, color: 'success', text: '' };
-      this.form = { supplierId: null, items: [] };
+      this.form = { orderNumber: '', consumerSectionId: null, withdrawDay: '', items: [] };
       this.pick = { itemId: null, qtd: 1 };
+      this.completeDate = null;
+      this.consumerSection = null;
       if (this.$refs.formRef) this.$refs.formRef.resetValidation();
     },
     addPickedItem() {
@@ -606,25 +643,114 @@ export default {
       if (!this.canSubmit) return;
       this.loading = true;
       try {
-        // Monta payload conforme contrato do app mobile
         const itemQuantities = {};
         for (const i of this.form.items) {
           itemQuantities[String(i.itemId)] = Math.round(Number(i.qtd));
         }
-        const withdrawDay = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-        const payload = { withdrawDay, itemQuantities };
+        const payload = {
+          orderNumber: String(this.form.orderNumber || '').trim(),
+          consumerSectionId: Number(this.form.consumerSectionId),
+          itemQuantities,
+          ...(this.form.withdrawDay ? { withdrawDay: this.form.withdrawDay } : {}),
+        };
         await this.ordersStore.create(payload);
-        // Snackbar de sucesso e emissão de evento simples
-        this.snack = { show: true, color: 'success', text: 'Pedido criado com sucesso!' };
-        this.$emit("created", { created: true });
+        this.snack = {
+          show: true,
+          color: 'success',
+          text: 'Pedido criado com sucesso!',
+        };
+        this.$emit('created', { created: true });
         this.sidebar.close();
         this.reset();
       } catch (e) {
-        this.error = this.isEdit ? "Falha ao atualizar pedido" : "Falha ao salvar pedido";
+        const status = e?.status || e?.response?.status;
+        const msg = e?.data?.message || e?.response?.data?.message || '';
+        if (status === 409) this.error = 'Número do pedido já existente. Escolha outro número.';
+        else if (status === 400 && String(msg).toLowerCase().includes('consumersectionid')) {
+          this.error = 'Seção consumidora inválida ou não é CONSUMER.';
+        } else {
+          this.error = this.isEdit ? 'Falha ao atualizar pedido' : 'Falha ao salvar pedido';
+        }
         console.error(e);
       } finally {
         this.loading = false;
       }
+    },
+    async changeStatus(status, withdrawDay = null) {
+      if (!this.orderDetails?.id) return;
+      try {
+        switch (status) {
+          case 'APPROVED':
+            await this.ordersStore.approve(this.orderDetails.id, status);
+            break;
+          case 'PROCESSING':
+            await this.ordersStore.process(this.orderDetails.id, status);
+            break;
+          case 'CANCELLED':
+            await this.ordersStore.cancel(this.orderDetails.id, status);
+            break;
+          case 'COMPLETED':
+            // recebe um Date (ou null) e repassa ao store; o store serializa para LocalDateTime
+            await this.ordersStore.complete(this.orderDetails.id, withdrawDay ?? new Date());
+            break;
+          default:
+            return;
+        }
+        this.$emit('created', { created: true });
+        this.sidebar.close();
+      } catch (e) {
+        this.error = 'Falha ao atualizar status do pedido';
+        console.error(e);
+      }
+    },
+    async confirmCompleteAction() {
+      const dt = this.completeDate ? new Date(`${this.completeDate}T00:00:00`) : new Date();
+      this.loading = true;
+      try {
+        await this.changeStatus('COMPLETED', dt);
+        this.completeDialog = false;
+      } finally {
+        this.loading = false;
+        this.pendingNewStatus = null;
+      }
+    },
+    async loadOrderDetails(val) {
+      if (val?.mode === 'view' && val.orderId != null) {
+        try {
+          this.loading = true;
+          const data = await this.ordersStore.getById(val.orderId);
+          this.orderDetails = data || null;
+          this.orderItems = await this.ordersStore.getItemsByOrderId(val.orderId);
+          this.consumerSection = this.parseConsumerSection(this.orderDetails);
+
+          const cur = this.currentStatus;
+          const exists = this.statusOptions.some((o) => o.value === cur);
+          this.selectedStatus = exists ? cur : null;
+        } catch (e) {
+          this.orderDetails = null;
+          this.orderItems = [];
+          this.selectedStatus = null;
+          this.consumerSection = null;
+        } finally {
+          this.loading = false;
+        }
+      }
+    },
+    parseConsumerSection(o) {
+      if (!o || typeof o !== 'object') return { id: null, title: null };
+      const id =
+        o.consumerSectionId ?? o.sectionId ?? o.consumerSection?.id ?? o.section?.id ?? null;
+      const title =
+        o.consumerSectionTitle ??
+        o.sectionTitle ??
+        o.consumerSection?.title ??
+        o.consumerSection?.name ??
+        o.section?.title ??
+        o.section?.name ??
+        o.consumerSectionName ??
+        o.sectionName ??
+        null;
+      return { id, title };
     },
   },
 };

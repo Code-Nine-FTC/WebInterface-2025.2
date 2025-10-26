@@ -3,7 +3,7 @@
     <v-card class="bg-white rounded-lg shadow-md pa-4 mb-6">
       <div>
         <div class="d-flex flex-row items-center gap-3">
-          <v-chip variant="elevated" color="red"> Fornecedores </v-chip>
+          <v-chip variant="elevated" color="red">Fornecedores</v-chip>
         </div>
       </div>
 
@@ -25,7 +25,9 @@
           class="flex-shrink-0 ml-2"
           height="38"
           @click="openSidebar"
-        >Cadastrar</v-btn>
+        >
+          Cadastrar
+        </v-btn>
       </div>
     </v-card>
 
@@ -33,18 +35,11 @@
       <div class="px-4 py-3 border-b border-slate-100">
         <div class="d-flex items-center gap-2 text-xs text-slate-500">
           <v-icon icon="mdi-account-multiple" class="mr-1" />
-          <span> Fornecedores </span>
+          <span>Fornecedores</span>
 
           <div class="ml-auto flex items-center gap-2">
-            <span class="hidden sm:inline text-slate-500">
-              Última atualização:
-            </span>
-            <v-chip
-              color="green"
-              size="x-small"
-              variant="tonal"
-              class="font-medium"
-            >
+            <span class="hidden sm:inline text-slate-500">Última atualização:</span>
+            <v-chip color="green" size="x-small" variant="tonal" class="font-medium">
               {{ formatDate(lastUpdated) }}
             </v-chip>
             <v-btn
@@ -70,20 +65,14 @@
             class="min-w-[900px]"
           >
             <template v-slot:item.lastUpdate="{ item }">
-              <span class="text-sm text-slate-700">{{
-                formatDate(item.lastUpdate)
-              }}</span>
+              <span class="text-sm text-slate-700">{{ formatDate(item.lastUpdate) }}</span>
             </template>
 
             <template v-slot:item.cnpj="{ item }">
-              <span class="text-sm text-slate-700">{{
-                formatCNPJ(item.cnpj)
-              }}</span>
+              <span class="text-sm text-slate-700">{{ formatCNPJ(item.cnpj) }}</span>
             </template>
             <template v-slot:item.phoneNumber="{ item }">
-              <span class="text-sm text-slate-700">{{
-                formatTelefone(item.phoneNumber)
-              }}</span>
+              <span class="text-sm text-slate-700">{{ formatTelefone(item.phoneNumber) }}</span>
             </template>
 
             <template v-slot:item.actions="{ item }">
@@ -120,40 +109,37 @@
       </div>
     </v-card>
 
-    <FormSidebar
-      @created="handleSupplierCreated"
-      @updated="handleSupplierUpdated"
-    />
+    <FormSidebar @created="handleSupplierCreated" @updated="handleSupplierUpdated" />
   </div>
 </template>
 
 <script setup>
-definePageMeta({ layout: "default", middleware: "auth" });
+definePageMeta({ layout: 'default', middleware: 'auth' });
 </script>
 
 <script>
-import { useSupplier } from "~/stores/supplier";
-import { useSidebarStore } from "~/stores/sidebar";
-import FormSidebar from "~/components/sidebars/suppliers.vue";
-import { formatCNPJ, formatTelefone, formatDate } from "~/utils/index";
+import { useSupplier } from '~/stores/supplier';
+import { useSidebarStore } from '~/stores/sidebar';
+import FormSidebar from '~/components/sidebars/suppliers.vue';
+import { formatCNPJ, formatTelefone, formatDate } from '~/utils/index';
 
 export default {
-  name: "Suppliers",
-  layout: "default",
+  name: 'Suppliers',
+  layout: 'default',
   data() {
     return {
       data: [],
       auth: null,
       loading: false,
-      search: "",
+      search: '',
       lastUpdated: Date.now(),
       headers: [
-        { title: "Nome", key: "name" },
-        { title: "E-Mail", key: "email" },
-        { title: "Telefone", key: "phoneNumber" },
-        { title: "CNPJ", key: "cnpj" },
-        { title: "Última Atualização", key: "lastUpdate" },
-        { title: "Ações", key: "actions", sortable: false },
+        { title: 'Nome', key: 'name' },
+        { title: 'E-Mail', key: 'email' },
+        { title: 'Telefone', key: 'phoneNumber' },
+        { title: 'CNPJ', key: 'cnpj' },
+        { title: 'Última Atualização', key: 'lastUpdate' },
+        { title: 'Ações', key: 'actions', sortable: false },
       ],
       sidebar: null,
       supplier: null,
@@ -168,18 +154,16 @@ export default {
   },
   computed: {
     filteredData() {
-      const q = (this.search || "").toLowerCase().trim();
-      const data = this.data.filter(u => u.name !== "Usuario de Migração");
+      const q = (this.search || '').toLowerCase().trim();
+      const data = this.data.filter((u) => u.name !== 'Usuario de Migração');
       if (!q) return data;
       return data.filter((item) =>
-        ["nomeFantasia", "razaoSocial", "email", "telefone", "cnpj"].some(
-          (k) => {
-            const v = item?.[k];
-            return v && v.toString().toLowerCase().includes(q);
-          }
-        )
+        ['nomeFantasia', 'razaoSocial', 'email', 'telefone', 'cnpj'].some((k) => {
+          const v = item?.[k];
+          return v && v.toString().toLowerCase().includes(q);
+        }),
       );
-},
+    },
   },
   methods: {
     async fetchData() {
@@ -188,32 +172,32 @@ export default {
         this.data = await this.supplier.list();
         this.lastUpdated = Date.now();
       } catch (e) {
-        console.error("Error fetching suppliers:", e);
+        console.error('Error fetching suppliers:', e);
       } finally {
         this.loading = false;
       }
     },
     openSidebar() {
-      this.sidebar?.open({ mode: "create" });
+      this.sidebar?.open({ mode: 'create' });
     },
     handleSupplierCreated() {
       this.fetchData();
     },
     editSupplier(item) {
-      this.sidebar?.open({ mode: "edit", supplier: item });
+      this.sidebar?.open({ mode: 'edit', supplier: item });
     },
     handleSupplierUpdated() {
       this.fetchData();
     },
     async removeSupplier(item) {
       if (!item?.id) return;
-      const ok = confirm("Tem certeza que deseja remover este fornecedor?");
+      const ok = confirm('Tem certeza que deseja remover este fornecedor?');
       if (!ok) return;
       try {
         await this.supplier.remove({ id: item.id });
         this.data = this.data.filter((s) => s.id !== item.id);
       } catch (e) {
-        console.error("Erro ao remover fornecedor:", e);
+        console.error('Erro ao remover fornecedor:', e);
         this.fetchData();
       }
     },
