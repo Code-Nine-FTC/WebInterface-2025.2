@@ -1,26 +1,14 @@
 <template>
-  <v-navigation-drawer
-    v-model="sidebar.isOpen"
-    location="right"
-    temporary
-    width="600"
-  >
+  <v-navigation-drawer v-model="sidebar.isOpen" location="right" temporary width="600">
     <v-toolbar flat density="comfortable">
-      <v-toolbar-title>{{
-        isEdit ? "Editar Usuário" : "Cadastrar Usuário"
-      }}</v-toolbar-title>
+      <v-toolbar-title>{{ isEdit ? 'Editar Usuário' : 'Cadastrar Usuário' }}</v-toolbar-title>
       <v-spacer />
       <v-btn icon="mdi-close" :disabled="loading" @click="closeAndReset" />
     </v-toolbar>
 
     <v-divider />
 
-    <v-form
-      ref="formRef"
-      v-model="formValid"
-      class="pa-4"
-      @submit.prevent="submit"
-    >
+    <v-form ref="formRef" v-model="formValid" class="pa-4" @submit.prevent="submit">
       <v-row dense>
         <v-col cols="12">
           <v-text-field
@@ -86,33 +74,15 @@
         </v-col>
 
         <v-col cols="12">
-          <v-alert
-            v-if="error"
-            type="error"
-            variant="tonal"
-            density="comfortable"
-            class="mb-2"
-          >
+          <v-alert v-if="error" type="error" variant="tonal" density="comfortable" class="mb-2">
             {{ error }}
           </v-alert>
         </v-col>
 
         <v-col cols="12" class="d-flex justify-end ga-2 mt-4">
-          <v-btn
-            type="button"
-            variant="text"
-            :disabled="loading"
-            @click="reset"
-          >
-            Limpar
-          </v-btn>
-          <v-btn
-            type="submit"
-            color="primary"
-            :loading="loading"
-            :disabled="!formValid"
-          >
-            {{ isEdit ? "Salvar Alterações" : "Salvar" }}
+          <v-btn type="button" variant="text" :disabled="loading" @click="reset">Limpar</v-btn>
+          <v-btn type="submit" color="primary" :loading="loading" :disabled="!formValid">
+            {{ isEdit ? 'Salvar Alterações' : 'Salvar' }}
           </v-btn>
         </v-col>
       </v-row>
@@ -121,14 +91,14 @@
 </template>
 
 <script>
-import { useSidebarStore } from "~/stores/sidebar";
-import { useUsers } from "~/stores/users";
-import { useAuthStore } from "~/stores/auth";
-import { useSection } from "~/stores/section";
+import { useSidebarStore } from '~/stores/sidebar';
+import { useUsers } from '~/stores/users';
+import { useAuthStore } from '~/stores/auth';
+import { useSection } from '~/stores/section';
 
 export default {
-  name: "FormSidebar",
-  emits: ["created", "updated"],
+  name: 'FormSidebar',
+  emits: ['created', 'updated'],
   data() {
     return {
       sidebar: null,
@@ -139,27 +109,26 @@ export default {
       currentId: null,
       sections: [],
       roles: [
-        { label: "Administrador", value: "ADMIN" },
-        { label: "Gerente", value: "MANAGER" },
-        { label: "Assistente", value: "ASSISTANT" },
+        { label: 'Administrador', value: 'ADMIN' },
+        { label: 'Gerente', value: 'MANAGER' },
+        { label: 'Assistente', value: 'ASSISTANT' },
       ],
       form: {
-        name: "",
-        password: "",
-        email: "",
+        name: '',
+        password: '',
+        email: '',
         section: {},
-        role: "",
+        role: '',
       },
       rules: {
-        required: (v) => !!v || v === 0 || "Obrigatório",
-        email: (v) =>
-          !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) || "E-mail inválido",
+        required: (v) => !!v || v === 0 || 'Obrigatório',
+        email: (v) => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) || 'E-mail inválido',
       },
     };
   },
   computed: {
     isEdit() {
-      return this.sidebar?.payload?.mode === "edit";
+      return this.sidebar?.payload?.mode === 'edit';
     },
     userId() {
       return this.auth?.user?.id;
@@ -171,10 +140,8 @@ export default {
       return this.auth?.user?.sections || [];
     },
     filteredRoles() {
-      if (this.userRole === "ADMIN") return this.roles;
-      return this.roles.filter(
-        (r) => r.value !== "ADMIN" && r.value !== "MANAGER"
-      );
+      if (this.userRole === 'ADMIN') return this.roles;
+      return this.roles.filter((r) => r.value !== 'ADMIN' && r.value !== 'MANAGER');
     },
   },
   created() {
@@ -188,13 +155,13 @@ export default {
     this.fetchSections();
   },
   watch: {
-    "sidebar.payload": {
+    'sidebar.payload': {
       deep: true,
       handler() {
         this.prefillIfEdit();
       },
     },
-    "sidebar.isOpen"(open) {
+    'sidebar.isOpen'(open) {
       if (!open) {
         setTimeout(() => this.reset(), 150);
       }
@@ -206,7 +173,7 @@ export default {
         const res = await this.section.list();
         this.sections = res;
       } catch (e) {
-        console.error("Error fetching sections:", e);
+        console.error('Error fetching sections:', e);
         return [];
       }
     },
@@ -214,17 +181,17 @@ export default {
       if (this.isEdit && this.sidebar.payload?.user) {
         const s = this.sidebar.payload.user;
         this.currentId = s.id;
-        this.form.name = s.name || s.username || "";
-        this.form.password = s.password || "";
-        this.form.email = s.email || "";
+        this.form.name = s.name || s.username || '';
+        this.form.password = s.password || '';
+        this.form.email = s.email || '';
         if (Array.isArray(s.sectionIds) && s.sectionIds.length > 0) {
           this.form.section = s.sectionIds[0];
         } else if (Array.isArray(s.sections) && s.sections.length > 0) {
           this.form.section = s.sections[0].id;
         } else {
-          this.form.section = "";
+          this.form.section = '';
         }
-        this.form.role = s.role || "";
+        this.form.role = s.role || '';
       } else if (!this.isEdit) {
         this.currentId = null;
         this.reset();
@@ -234,11 +201,11 @@ export default {
       this.error = null;
       this.currentId = null;
       this.form = {
-        name: "",
-        password: "",
-        email: "",
-        section: "",
-        role: "",
+        name: '',
+        password: '',
+        email: '',
+        section: '',
+        role: '',
       };
       if (this.$refs.formRef) this.$refs.formRef.resetValidation();
     },
@@ -269,17 +236,15 @@ export default {
             id: this.currentId,
             ...payload,
           });
-          this.$emit("updated", updated);
+          this.$emit('updated', updated);
         } else {
           const created = await this.users.create(payload);
-          this.$emit("created", created);
+          this.$emit('created', created);
         }
         this.sidebar.close();
         this.reset();
       } catch (e) {
-        this.error = this.isEdit
-          ? "Falha ao atualizar usuário"
-          : "Falha ao salvar usuário";
+        this.error = this.isEdit ? 'Falha ao atualizar usuário' : 'Falha ao salvar usuário';
         console.error(e);
       } finally {
         this.loading = false;

@@ -1,7 +1,7 @@
-import { useAuthStore } from "../stores/auth";
+import { useAuthStore } from '../stores/auth';
 
 export default defineNuxtRouteMiddleware(async (to) => {
-  const publicPages = ["/login"];
+  const publicPages = ['/login'];
 
   if (publicPages.includes(to.path)) return;
 
@@ -16,12 +16,12 @@ export default defineNuxtRouteMiddleware(async (to) => {
     try {
       await auth.initializeAuth();
     } catch (e) {
-      console.error("Auth initialization failed:", e);
-      return navigateTo("/login");
+      console.error('Auth initialization failed:', e);
+      return navigateTo('/login');
     }
   }
 
   if (!auth.isAuthenticated) {
-    return navigateTo("/login");
+    return navigateTo('/login');
   }
 });

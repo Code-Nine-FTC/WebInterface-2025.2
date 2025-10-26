@@ -33,6 +33,17 @@
           Cadastrar
         </v-btn>
         <v-btn
+          v-if="userRole === 'ADMIN' || userRole === 'MANAGER'"
+          prepend-icon="mdi-history"
+          density="comfortable"
+          color="warning"
+          class="flex-shrink-0 ml-2"
+          height="38"
+          @click="openHistoryDialog"
+        >
+          Histórico de Perdas
+        </v-btn>
+        <v-btn
           prepend-icon="mdi-arrow-right"
           density="comfortable"
           color="secondary"
@@ -92,6 +103,34 @@
                     />
                   </template>
                 </v-tooltip>
+                <v-tooltip text="Lotes" location="top">
+                  <template #activator="{ props }">
+                    <v-btn
+                      v-bind="props"
+                      size="small"
+                      icon="mdi-view-list"
+                      variant="text"
+                      color="indigo"
+                      @click="openLots(item)"
+                    />
+                  </template>
+                </v-tooltip>
+                <v-tooltip
+                  v-if="userRole === 'ADMIN' || userRole === 'MANAGER'"
+                  text="Registrar Perda"
+                  location="top"
+                >
+                  <template #activator="{ props }">
+                    <v-btn
+                      v-bind="props"
+                      size="small"
+                      icon="mdi-alert-circle"
+                      variant="text"
+                      color="error"
+                      @click="registerLoss(item)"
+                    />
+                  </template>
+                </v-tooltip>
               </div>
             </template>
             <template v-slot:item.expireDate="{ item }">
@@ -106,6 +145,98 @@
       </div>
     </v-card>
     <StorageItemSidebar @updated="onItemUpdated" />
+    <LossSidebar @loss-registered="onLossRegistered" />
+
+    <!-- Dialog de Histórico de Perdas -->
+    <v-dialog v-model="historyDialog" max-width="1200">
+      <v-card>
+        <v-toolbar flat density="comfortable" color="warning">
+          <v-toolbar-title class="text-white">
+            <v-icon class="mr-2">mdi-history</v-icon>
+            Histórico de Perdas
+          </v-toolbar-title>
+          <v-spacer />
+          <v-btn icon="mdi-close" color="white" @click="historyDialog = false" />
+        </v-toolbar>
+
+        <v-card-text class="pa-4">
+          <!-- Campo de busca -->
+          <v-text-field
+            v-model="historySearch"
+            clearable
+            density="compact"
+            variant="outlined"
+            label="Pesquisar"
+            placeholder="Buscar por item, usuário, motivo..."
+            append-inner-icon="mdi-magnify"
+            class="mb-4"
+          />
+
+          <!-- Tabela de histórico -->
+          <v-data-table
+            :headers="historyHeaders"
+            :items="filteredHistoryData"
+            :loading="historyLoading"
+            item-key="id"
+            class="elevation-1"
+            :items-per-page="10"
+          >
+            <template v-slot:item.createDate="{ item }">
+              <span class="text-sm">{{ formatDate(item.createDate) }}</span>
+            </template>
+
+            <template v-slot:item.lostQuantity="{ item }">
+              <v-chip size="small" color="error" variant="tonal">
+                {{ item.lostQuantity }}
+              </v-chip>
+            </template>
+
+            <template v-slot:item.reason="{ item }">
+              <v-tooltip location="top">
+                <template #activator="{ props }">
+                  <span
+                    v-bind="props"
+                    class="text-sm text-slate-700"
+                    style="
+                      max-width: 300px;
+                      display: block;
+                      overflow: hidden;
+                      text-overflow: ellipsis;
+                      white-space: nowrap;
+                    "
+                  >
+                    {{ item.reason }}
+                  </span>
+                </template>
+                <span>{{ item.reason }}</span>
+              </v-tooltip>
+            </template>
+
+            <template v-slot:loading>
+              <v-skeleton-loader type="table-row@5" />
+            </template>
+
+            <template v-slot:no-data>
+              <div class="text-center py-8">
+                <v-icon size="64" color="grey">mdi-history</v-icon>
+                <p class="text-slate-500 mt-2">Nenhuma perda registrada</p>
+              </div>
+            </template>
+          </v-data-table>
+        </v-card-text>
+
+        <v-divider />
+
+        <v-card-actions class="pa-4">
+          <v-spacer />
+          <v-btn variant="text" color="primary" :loading="historyLoading" @click="loadHistoryData">
+            <v-icon class="mr-2">mdi-refresh</v-icon>
+            Atualizar
+          </v-btn>
+          <v-btn variant="text" @click="historyDialog = false">Fechar</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
@@ -117,7 +248,9 @@ definePageMeta({ layout: 'default' });
 import { useAuthStore } from '~/stores/auth';
 import { useStorage } from '~/stores/storage';
 import StorageItemSidebar from '~/components/sidebars/storage-item.vue';
+import LossSidebar from '~/components/sidebars/loss.vue';
 import { useSidebarStore } from '~/stores/sidebar';
+import { useItemLoss } from '~/stores/itemLoss';
 
 export default {
   name: 'Storage',
@@ -142,12 +275,24 @@ export default {
         // { title: "QR", key: "qrCode" },
       ],
       sidebar: null,
+      historyDialog: false,
+      historyData: [],
+      historyLoading: false,
+      historySearch: '',
+      historyHeaders: [
+        { title: 'Item', key: 'itemName', sortable: true },
+        { title: 'Quantidade', key: 'lostQuantity', sortable: true, align: 'center' },
+        { title: 'Motivo', key: 'reason', sortable: false },
+        { title: 'Data/Hora', key: 'createDate', sortable: true },
+        { title: 'Usuário', key: 'recordedByName', sortable: true },
+      ],
     };
   },
   created() {
     this.auth = useAuthStore();
     this.storage = useStorage();
     this.sidebar = useSidebarStore();
+    this.itemLossStore = useItemLoss();
   },
   async mounted() {
     if (this.auth && typeof this.auth.initializeAuth === 'function') {
@@ -178,6 +323,16 @@ export default {
         });
       });
     },
+    filteredHistoryData() {
+      const q = (this.historySearch || '').toString().toLowerCase().trim();
+      if (!q) return this.historyData;
+      return this.historyData.filter((item) => {
+        return ['itemName', 'reason', 'recordedByName'].some((key) => {
+          const v = item?.[key];
+          return v !== undefined && v !== null && v.toString().toLowerCase().includes(q);
+        });
+      });
+    },
     userName() {
       return this.auth?.user?.name || 'Usuário';
     },
@@ -199,6 +354,9 @@ export default {
     onItemUpdated() {
       this.fetchData();
     },
+    onLossRegistered() {
+      this.fetchData();
+    },
     async fetchData() {
       this.loading = true;
       try {
@@ -211,6 +369,22 @@ export default {
         this.loading = false;
       } catch (e) {
         console.error('Error fetching data:', e);
+      }
+    },
+    async openHistoryDialog() {
+      this.historyDialog = true;
+      await this.loadHistoryData();
+    },
+    async loadHistoryData() {
+      this.historyLoading = true;
+      try {
+        const losses = await this.itemLossStore.getAllLosses();
+        this.historyData = losses || [];
+      } catch (e) {
+        console.error('Error fetching loss history:', e);
+        this.historyData = [];
+      } finally {
+        this.historyLoading = false;
       }
     },
     formatDate(value) {
@@ -236,6 +410,17 @@ export default {
       const id = raw?.itemId ?? raw?.id;
       if (!id) return;
       this.sidebar?.open({ mode: 'edit-item', itemId: id });
+    },
+    openLots(item) {
+      const raw = item?.raw ?? item;
+      const id = raw?.itemId ?? raw?.id;
+      if (!id) return;
+      this.$router.push({ path: `/items/${id}`, query: { tab: 'lotes' } });
+    },
+    registerLoss(item) {
+      const raw = item?.raw ?? item;
+      if (!raw) return;
+      this.sidebar?.open({ mode: 'loss', item: raw });
     },
     goToTypeItems() {
       this.$router.push({ path: '/typeitems' });

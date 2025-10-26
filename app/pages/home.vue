@@ -26,20 +26,29 @@
         <v-icon icon="mdi-flash" class="mr-2" />
         <span class="text-subtitle-2 font-semibold">Ações Rápidas</span>
       </div>
-      <div class="d-flex flex-wrap gap-3">
-        <v-btn
+      <v-row class="quick-actions-row" dense>
+        <v-col
           v-for="action in quickActions"
           :key="action.label"
-          size="large"
-          variant="elevated"
-          :color="action.color"
-          class="quick-action-btn mr-12"
-          @click="action.run()"
+          cols="12"
+          sm="6"
+          md="4"
+          lg="3"
+          xl="2"
         >
-          <v-icon start icon="mdi-chevron-right" />
-          {{ action.label }}
-        </v-btn>
-      </div>
+          <v-btn
+            block
+            size="large"
+            variant="elevated"
+            :color="action.color"
+            class="quick-action-btn"
+            @click="action.run()"
+          >
+            <v-icon start icon="mdi-chevron-right" />
+            {{ action.label }}
+          </v-btn>
+        </v-col>
+      </v-row>
     </v-card>
 
     <!-- Itens críticos -->
@@ -199,7 +208,13 @@ export default {
             run: () => this.$router.push('/users'),
           },
         );
-        // Botão "Nova Seção" ocultado conforme solicitação
+        if (this.userRole === 'ADMIN') {
+          actions.push({
+            label: 'Seções',
+            color: 'deep-purple',
+            run: () => this.$router.push('/sections'),
+          });
+        }
       }
       return actions;
     },
@@ -304,8 +319,6 @@ export default {
 }
 
 .quick-action-btn {
-  flex: 1 1 180px;
-  max-width: 240px;
   height: 60px;
   justify-content: flex-start;
   font-weight: 600;
@@ -340,10 +353,6 @@ export default {
 }
 
 @media (max-width: 640px) {
-  .quick-action-btn {
-    flex: 1 1 100%;
-    max-width: 100%;
-  }
   .kpi-grid {
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   }

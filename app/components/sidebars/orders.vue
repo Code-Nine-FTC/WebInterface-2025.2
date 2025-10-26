@@ -23,6 +23,14 @@
               </span>
             </div>
             <div class="d-flex align-center gap-2">
+              <v-icon size="small" color="primary">mdi-tag</v-icon>
+              <span class="text-body-2">
+                <strong>Número:</strong>
+                <template v-if="displayOrderNumber">{{ displayOrderNumber }}</template>
+                <template v-else>—</template>
+              </span>
+            </div>
+            <div class="d-flex align-center gap-2">
               <v-icon size="small" color="primary">mdi-calendar</v-icon>
               <span class="text-body-2">
                 <strong>Retirada:</strong>
@@ -36,13 +44,16 @@
                 {{ statusLabel(orderDetails?.status) }}
               </span>
             </div>
-            <div v-if="supplierNames.length" class="d-flex align-center gap-2">
-              <v-icon size="small" color="primary">mdi-domain</v-icon>
+            <div class="d-flex align-center gap-2">
+              <v-icon size="small" color="primary">mdi-view-grid</v-icon>
               <span class="text-body-2">
-                <strong>Fornecedores:</strong>
-                {{ supplierNames.join(', ') }}
+                <strong>Seção:</strong>
+                <template v-if="consumerSection?.title">{{ consumerSection.title }}</template>
+                <template v-else-if="consumerSection?.id">#{{ consumerSection.id }}</template>
+                <template v-else>não informada</template>
               </span>
             </div>
+
             <div class="d-flex flex-column gap-2 mt-3">
               <div class="text-caption text-medium-emphasis">Atualizar status</div>
               <v-btn-toggle
@@ -62,7 +73,6 @@
                   :color="opt.color"
                   variant="tonal"
                   class="mr-1 mb-1"
-                  @click="statusChange(opt.value)"
                 >
                   <v-icon size="16" class="mr-1">{{ opt.icon }}</v-icon>
                   {{ opt.label }}
@@ -154,18 +164,39 @@
     <!-- Modo Criação/Edição -->
     <v-form v-else ref="formRef" v-model="formValid" class="pa-4" @submit.prevent="submit">
       <v-row dense>
-        <v-col cols="12">
-          <v-select
-            v-model="form.supplierId"
-            label="Fornecedor"
-            :items="supplierOptions"
-            item-title="label"
-            item-value="id"
-            :loading="suppliersLoading"
+        <v-col cols="12" md="6">
+          <v-text-field
+            v-model="form.orderNumber"
+            label="Número do Pedido"
+            :rules="[rules.required]"
             variant="outlined"
             density="comfortable"
             hide-details="auto"
-            placeholder="Selecione o fornecedor"
+          />
+        </v-col>
+        <v-col cols="12" md="6">
+          <v-text-field
+            v-model="form.withdrawDay"
+            type="date"
+            label="Data de Retirada (opcional)"
+            variant="outlined"
+            density="comfortable"
+            hide-details="auto"
+          />
+        </v-col>
+        <v-col cols="12">
+          <v-select
+            v-model="form.consumerSectionId"
+            label="Seção Consumidora"
+            :items="consumerSectionOptions"
+            item-title="title"
+            item-value="id"
+            :loading="consumersLoading"
+            variant="outlined"
+            density="comfortable"
+            hide-details="auto"
+            :hint="consumersHint"
+            persistent-hint
           />
         </v-col>
 
@@ -211,7 +242,7 @@
                   </v-btn>
                 </div>
                 <div class="text-caption text-medium-emphasis">
-                  Dica: você pode procurar pelo nome, tipo, seção ou fornecedor do item.
+                  Dica: você pode procurar pelo nome, tipo ou seção do item.
                 </div>
               </div>
             </v-card-text>
@@ -292,9 +323,10 @@
 
 <script>
 import { useSidebarStore } from '~/stores/sidebar';
-import { useSupplier } from '~/stores/supplier';
 import { useStorage } from '~/stores/storage';
 import { useOrders } from '~/stores/orders';
+import { useSection } from '~/stores/section';
+import { useAuthStore } from '~/stores/auth';
 
 export default {
   name: 'OrdersSidebar',
@@ -302,23 +334,23 @@ export default {
   data() {
     return {
       sidebar: null,
-      supplierStore: null,
       storageStore: null,
-      suppliersLoading: false,
       itemsLoading: false,
       loading: false,
       formValid: true,
       error: null,
       orderDetails: null,
       orderItems: [],
-      supplierNames: [],
+
       selectedStatus: null,
       confirmCancel: false,
       completeDialog: false,
       pendingNewStatus: null,
       snack: { show: false, color: 'success', text: '' },
       form: {
-        supplierId: null,
+        orderNumber: '',
+        consumerSectionId: null,
+        withdrawDay: '',
         items: [],
       },
       pick: {
@@ -326,8 +358,12 @@ export default {
         qtd: 1,
       },
       completeDate: null,
-      suppliers: [],
+
       items: [],
+      consumers: [],
+      consumersLoading: false,
+      consumersHint: '',
+      consumerSection: null,
       ORDER_STATUS: {
         APPROVED: {
           label: 'Aprovado',
@@ -413,12 +449,7 @@ export default {
       }
       return [];
     },
-    supplierOptions() {
-      return (this.suppliers || []).map((s) => ({
-        id: s.id,
-        label: s.name || s.nomeFantasia || s.razaoSocial || `Fornecedor ${s.id}`,
-      }));
-    },
+
     itemOptions() {
       return (this.items || []).map((i) => ({
         id: i.itemId ?? i.id,
@@ -436,17 +467,37 @@ export default {
 
     canSubmit() {
       return Boolean(
-        this.form.supplierId && Array.isArray(this.form.items) && this.form.items.length > 0,
+        this.form.orderNumber &&
+          this.form.consumerSectionId &&
+          Array.isArray(this.form.items) &&
+          this.form.items.length > 0,
+      );
+    },
+    consumerSectionOptions() {
+      return (this.consumers || []).map((c) => ({
+        id: c.id,
+        title: c.title || c.name || `#${c.id}`,
+      }));
+    },
+    displayOrderNumber() {
+      const o = this.orderDetails || {};
+      return (
+        o.orderNumber ||
+        o.numero ||
+        o.number ||
+        (o.metadata && (o.metadata.orderNumber || o.metadata.numero || o.metadata.number)) ||
+        null
       );
     },
   },
   async created() {
     this.sidebar = useSidebarStore();
-    this.supplierStore = useSupplier();
     this.storageStore = useStorage();
     this.ordersStore = useOrders();
-    await this.fetchSuppliers();
+    this.sectionStore = useSection();
+    this.auth = useAuthStore();
     await this.fetchItems();
+    await this.fetchConsumers();
   },
   watch: {
     'sidebar.isOpen'(open) {
@@ -495,16 +546,7 @@ export default {
       this.confirmCancel = false;
       this.pendingNewStatus = null;
     },
-    async fetchSuppliers() {
-      this.suppliersLoading = true;
-      try {
-        this.suppliers = (await this.supplierStore.list()) || [];
-      } catch (e) {
-        this.suppliers = [];
-      } finally {
-        this.suppliersLoading = false;
-      }
-    },
+
     async fetchItems() {
       this.itemsLoading = true;
       try {
@@ -515,6 +557,32 @@ export default {
         this.itemsLoading = false;
       }
     },
+    async fetchConsumers() {
+      this.consumersLoading = true;
+      this.consumersHint = '';
+      try {
+        this.consumers = await this.sectionStore.listConsumers();
+        if (!this.consumers?.length) {
+          this.consumersHint =
+            'Nenhuma seção consumidora disponível. Recarregue ou contate o admin.';
+        }
+      } catch (e) {
+        const code = e?.status || e?.response?.status;
+        if (code === 403) {
+          const sessionSection = this.auth?.user?.sections?.[0];
+          if (sessionSection?.id) {
+            this.form.consumerSectionId = Number(sessionSection.id);
+            this.consumersHint = `Sem permissão para listar. Usando seção da sessão: ${sessionSection.title || sessionSection.name || '#' + sessionSection.id}`;
+          } else {
+            this.consumersHint = 'Sem permissão para listar seções consumidoras.';
+          }
+        } else {
+          this.consumersHint = 'Falha ao carregar seções consumidoras.';
+        }
+      } finally {
+        this.consumersLoading = false;
+      }
+    },
     closeAndReset() {
       this.sidebar.close();
       this.reset();
@@ -523,15 +591,15 @@ export default {
       this.error = null;
       this.orderDetails = null;
       this.orderItems = [];
-      this.supplierNames = [];
       this.selectedStatus = null;
       this.confirmCancel = false;
       this.completeDialog = false;
       this.pendingNewStatus = null;
       this.snack = { show: false, color: 'success', text: '' };
-      this.form = { supplierId: null, items: [] };
+      this.form = { orderNumber: '', consumerSectionId: null, withdrawDay: '', items: [] };
       this.pick = { itemId: null, qtd: 1 };
       this.completeDate = null;
+      this.consumerSection = null;
       if (this.$refs.formRef) this.$refs.formRef.resetValidation();
     },
     addPickedItem() {
@@ -579,7 +647,12 @@ export default {
         for (const i of this.form.items) {
           itemQuantities[String(i.itemId)] = Math.round(Number(i.qtd));
         }
-        const payload = { itemQuantities, supplierId: this.form.supplierId };
+        const payload = {
+          orderNumber: String(this.form.orderNumber || '').trim(),
+          consumerSectionId: Number(this.form.consumerSectionId),
+          itemQuantities,
+          ...(this.form.withdrawDay ? { withdrawDay: this.form.withdrawDay } : {}),
+        };
         await this.ordersStore.create(payload);
         this.snack = {
           show: true,
@@ -590,7 +663,14 @@ export default {
         this.sidebar.close();
         this.reset();
       } catch (e) {
-        this.error = this.isEdit ? 'Falha ao atualizar pedido' : 'Falha ao salvar pedido';
+        const status = e?.status || e?.response?.status;
+        const msg = e?.data?.message || e?.response?.data?.message || '';
+        if (status === 409) this.error = 'Número do pedido já existente. Escolha outro número.';
+        else if (status === 400 && String(msg).toLowerCase().includes('consumersectionid')) {
+          this.error = 'Seção consumidora inválida ou não é CONSUMER.';
+        } else {
+          this.error = this.isEdit ? 'Falha ao atualizar pedido' : 'Falha ao salvar pedido';
+        }
         console.error(e);
       } finally {
         this.loading = false;
@@ -634,9 +714,6 @@ export default {
         this.pendingNewStatus = null;
       }
     },
-    async statusChange(value) {
-      await this.changeStatus(value);
-    },
     async loadOrderDetails(val) {
       if (val?.mode === 'view' && val.orderId != null) {
         try {
@@ -644,26 +721,7 @@ export default {
           const data = await this.ordersStore.getById(val.orderId);
           this.orderDetails = data || null;
           this.orderItems = await this.ordersStore.getItemsByOrderId(val.orderId);
-
-          const supplierIds = Array.isArray(this.orderDetails?.supplierIds)
-            ? this.orderDetails.supplierIds
-            : [];
-          this.supplierNames = await Promise.all(
-            supplierIds.map(async (sid) => {
-              try {
-                const s = await this.supplierStore.getById(sid);
-                if (s && typeof s === 'object') {
-                  if (s.name && String(s.name).trim()) return String(s.name);
-                  if (s.nomeFantasia && String(s.nomeFantasia).trim())
-                    return String(s.nomeFantasia);
-                  if (s.razaoSocial && String(s.razaoSocial).trim()) return String(s.razaoSocial);
-                }
-                return `Fornecedor não encontrado (ID ${sid})`;
-              } catch {
-                return `Fornecedor não encontrado (ID ${sid})`;
-              }
-            }),
-          );
+          this.consumerSection = this.parseConsumerSection(this.orderDetails);
 
           const cur = this.currentStatus;
           const exists = this.statusOptions.some((o) => o.value === cur);
@@ -671,12 +729,28 @@ export default {
         } catch (e) {
           this.orderDetails = null;
           this.orderItems = [];
-          this.supplierNames = [];
           this.selectedStatus = null;
+          this.consumerSection = null;
         } finally {
           this.loading = false;
         }
       }
+    },
+    parseConsumerSection(o) {
+      if (!o || typeof o !== 'object') return { id: null, title: null };
+      const id =
+        o.consumerSectionId ?? o.sectionId ?? o.consumerSection?.id ?? o.section?.id ?? null;
+      const title =
+        o.consumerSectionTitle ??
+        o.sectionTitle ??
+        o.consumerSection?.title ??
+        o.consumerSection?.name ??
+        o.section?.title ??
+        o.section?.name ??
+        o.consumerSectionName ??
+        o.sectionName ??
+        null;
+      return { id, title };
     },
   },
 };

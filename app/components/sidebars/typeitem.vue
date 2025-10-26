@@ -1,32 +1,20 @@
 <template>
-  <v-navigation-drawer
-    v-model="sidebar.isOpen"
-    location="right"
-    temporary
-    width="600"
-  >
+  <v-navigation-drawer v-model="sidebar.isOpen" location="right" temporary width="600">
     <v-toolbar flat density="comfortable">
       <v-toolbar-title>
         {{
           isView
-            ? "Detalhes do Tipo de Item"
+            ? 'Detalhes do Tipo de Item'
             : isEdit
-            ? "Editar Tipo de Item"
-            : "Cadastrar Tipo de Item"
+              ? 'Editar Tipo de Item'
+              : 'Cadastrar Tipo de Item'
         }}
-        <span
-          v-if="(isEdit || isView) && form.nomeTipo"
-          class="ml-2 text-primary font-bold"
-        >
+        <span v-if="(isEdit || isView) && form.nomeTipo" class="ml-2 text-primary font-bold">
           - {{ form.nomeTipo }}
         </span>
       </v-toolbar-title>
       <v-spacer />
-      <v-btn
-        icon="mdi-close"
-        :disabled="!isView && loading"
-        @click="closeAndReset"
-      />
+      <v-btn icon="mdi-close" :disabled="!isView && loading" @click="closeAndReset" />
     </v-toolbar>
     <v-card
       v-if="(isEdit || isView) && (form.nomeTipo || selectedSectionName)"
@@ -38,28 +26,24 @@
         <div class="d-flex flex-column gap-1">
           <div v-if="form.nomeTipo" class="d-flex align-center gap-2">
             <v-icon size="small" color="primary">mdi-tag</v-icon>
-            <span class="text-body-2"
-              ><strong>Nome:</strong> {{ form.nomeTipo }}</span
-            >
+            <span class="text-body-2">
+              <strong>Nome:</strong>
+              {{ form.nomeTipo }}
+            </span>
           </div>
           <div v-if="selectedSectionName" class="d-flex align-center gap-2">
             <v-icon size="small" color="primary">mdi-folder</v-icon>
-            <span class="text-body-2"
-              ><strong>Seção:</strong> {{ selectedSectionName }}</span
-            >
+            <span class="text-body-2">
+              <strong>Seção:</strong>
+              {{ selectedSectionName }}
+            </span>
           </div>
         </div>
       </v-card-text>
     </v-card>
     <v-divider />
 
-    <v-form
-      v-if="!isView"
-      ref="formRef"
-      v-model="formValid"
-      class="pa-4"
-      @submit.prevent="submit"
-    >
+    <v-form v-if="!isView" ref="formRef" v-model="formValid" class="pa-4" @submit.prevent="submit">
       <v-row dense>
         <v-col cols="12">
           <v-text-field
@@ -86,32 +70,14 @@
           />
         </v-col>
         <v-col cols="12">
-          <v-alert
-            v-if="error"
-            type="error"
-            variant="tonal"
-            density="comfortable"
-            class="mb-2"
-          >
+          <v-alert v-if="error" type="error" variant="tonal" density="comfortable" class="mb-2">
             {{ error }}
           </v-alert>
         </v-col>
         <v-col cols="12" class="d-flex justify-end ga-2 mt-4">
-          <v-btn
-            type="button"
-            variant="text"
-            :disabled="loading"
-            @click="reset"
-          >
-            Limpar
-          </v-btn>
-          <v-btn
-            type="submit"
-            color="primary"
-            :loading="loading"
-            :disabled="!formValid"
-          >
-            {{ isEdit ? "Salvar Alterações" : "Salvar" }}
+          <v-btn type="button" variant="text" :disabled="loading" @click="reset">Limpar</v-btn>
+          <v-btn type="submit" color="primary" :loading="loading" :disabled="!formValid">
+            {{ isEdit ? 'Salvar Alterações' : 'Salvar' }}
           </v-btn>
         </v-col>
       </v-row>
@@ -120,14 +86,14 @@
 </template>
 
 <script>
-import { useSidebarStore } from "~/stores/sidebar";
-import { useTypeItem } from "~/stores/typeItem";
-import { useAuthStore } from "~/stores/auth";
-import { useSection } from "~/stores/section";
+import { useSidebarStore } from '~/stores/sidebar';
+import { useTypeItem } from '~/stores/typeItem';
+import { useAuthStore } from '~/stores/auth';
+import { useSection } from '~/stores/section';
 
 export default {
-  name: "TypeItemSidebar",
-  emits: ["created", "updated"],
+  name: 'TypeItemSidebar',
+  emits: ['created', 'updated'],
   data() {
     return {
       sidebar: null,
@@ -140,20 +106,20 @@ export default {
       error: null,
       currentId: null,
       form: {
-        nomeTipo: "",
+        nomeTipo: '',
         sectionId: null,
       },
       rules: {
-        required: (v) => !!v || v === 0 || "Obrigatório",
+        required: (v) => !!v || v === 0 || 'Obrigatório',
       },
     };
   },
   computed: {
     isEdit() {
-      return this.sidebar?.payload?.mode === "edit";
+      return this.sidebar?.payload?.mode === 'edit';
     },
     isView() {
-      return this.sidebar?.payload?.mode === "view";
+      return this.sidebar?.payload?.mode === 'view';
     },
     userRole() {
       return this.authStore?.user?.role;
@@ -171,7 +137,7 @@ export default {
     this.sectionStore = useSection();
     this.sections = await this.sectionStore.list();
     const userSections = this.authStore.user?.sections || [];
-    if (this.userRole === "ADMIN") {
+    if (this.userRole === 'ADMIN') {
       this.form.sectionId = null;
     } else {
       this.form.sectionId = userSections.length ? userSections[0].id : null;
@@ -179,13 +145,13 @@ export default {
     this.prefillIfEdit();
   },
   watch: {
-    "sidebar.payload": {
+    'sidebar.payload': {
       deep: true,
       handler() {
         this.prefillIfEdit();
       },
     },
-    "sidebar.isOpen"(open) {
+    'sidebar.isOpen'(open) {
       if (!open) {
         setTimeout(() => this.reset(), 150);
       }
@@ -198,11 +164,10 @@ export default {
         this.currentId = id;
         try {
           const item = await this.typeItemStore.getById(id);
-          this.form.nomeTipo = item.name || item.nomeTipo || "";
-          this.form.sectionId =
-            item.sectionId || (this.authStore.user?.sections?.[0]?.id ?? null);
+          this.form.nomeTipo = item.name || item.nomeTipo || '';
+          this.form.sectionId = item.sectionId || (this.authStore.user?.sections?.[0]?.id ?? null);
         } catch (e) {
-          this.form.nomeTipo = "";
+          this.form.nomeTipo = '';
           this.form.sectionId = this.authStore.user?.sections?.[0]?.id ?? null;
         }
       } else if (!this.isEdit && !this.isView) {
@@ -216,7 +181,7 @@ export default {
       this.error = null;
       this.currentId = null;
       this.form = {
-        nomeTipo: "",
+        nomeTipo: '',
         sectionId: null,
       };
       if (this.$refs.formRef) this.$refs.formRef.resetValidation();
@@ -242,17 +207,17 @@ export default {
             id: this.currentId,
             ...payload,
           });
-          this.$emit("updated", updated);
+          this.$emit('updated', updated);
         } else {
           const created = await this.typeItemStore.create(payload);
-          this.$emit("created", created);
+          this.$emit('created', created);
         }
         this.sidebar.close();
         this.reset();
       } catch (e) {
         this.error = this.isEdit
-          ? "Falha ao atualizar tipo de item"
-          : "Falha ao salvar tipo de item";
+          ? 'Falha ao atualizar tipo de item'
+          : 'Falha ao salvar tipo de item';
         console.error(e);
       } finally {
         this.loading = false;
