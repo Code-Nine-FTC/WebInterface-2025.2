@@ -66,7 +66,7 @@
               :color="item.sectionType === 'CONSUMER' ? 'indigo' : 'blue'"
               variant="tonal"
             >
-              {{ item.sectionType }}
+              {{ translateSectionType(item.sectionType) }}
             </v-chip>
           </template>
           <template #item.isActive="{ item }">
@@ -126,6 +126,7 @@
             <v-text-field
               v-model="form.title"
               label="Título"
+              placeholder="Digite o título da seção"
               variant="outlined"
               density="comfortable"
               :rules="[rules.required]"
@@ -133,16 +134,11 @@
             <v-select
               v-model="form.sectionType"
               :items="typeOnlyOptions"
-              label="Tipo"
+              label="Tipo de Seção"
+              placeholder="Selecione o tipo"
               variant="outlined"
               density="comfortable"
               :rules="[rules.required]"
-            />
-            <v-text-field
-              v-model="form.roleAccess"
-              label="Role Access (opcional)"
-              variant="outlined"
-              density="comfortable"
             />
             <div class="d-flex align-center mt-2">
               <v-switch v-model="form.isActive" color="green" inset hide-details label="Ativa" />
@@ -171,7 +167,6 @@ const headers = [
   { title: 'Título', key: 'title' },
   { title: 'Tipo', key: 'sectionType', width: 130 },
   { title: 'Ativo', key: 'isActive', width: 110 },
-  { title: 'Role Access', key: 'roleAccess' },
   { title: 'Criado em', key: 'createdAt' },
   { title: 'Última atualização', key: 'lastUpdate' },
   { title: 'Último usuário', key: 'lastUserName' },
@@ -180,17 +175,17 @@ const headers = [
 
 const loading = ref(false);
 const search = ref('');
-const filterType = ref<'ALL' | 'CONSUMER' | 'STORAGE'>('ALL');
+const filterType = ref<'ALL' | 'CONSUMIDOR' | 'ESTOQUE'>('ALL');
 const filterActive = ref<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
 
 const typeOptions = [
   { title: 'Todos os tipos', value: 'ALL' },
-  { title: 'CONSUMER', value: 'CONSUMER' },
-  { title: 'STORAGE', value: 'STORAGE' },
+  { title: 'CONSUMIDOR', value: 'CONSUMIDOR' },
+  { title: 'ESTOQUE', value: 'ESTOQUE' },
 ];
 const typeOnlyOptions = [
-  { title: 'CONSUMER', value: 'CONSUMER' },
-  { title: 'STORAGE', value: 'STORAGE' },
+  { title: 'CONSUMIDOR', value: 'CONSUMIDOR' },
+  { title: 'ESTOQUE', value: 'ESTOQUE' },
 ];
 const activeOptions = [
   { title: 'Todos', value: 'ALL' },
@@ -241,14 +236,12 @@ const formValid = ref(true);
 const form = ref<{
   id?: number;
   title: string;
-  sectionType: 'CONSUMER' | 'STORAGE';
+  sectionType: 'CONSUMIDOR' | 'ESTOQUE';
   isActive: boolean;
-  roleAccess?: string | null;
 }>({
   title: '',
-  sectionType: 'CONSUMER',
+  sectionType: 'CONSUMIDOR',
   isActive: true,
-  roleAccess: '',
 });
 const formError = ref<string | null>(null);
 
@@ -256,9 +249,20 @@ const rules = {
   required: (v: any) => !!v || v === 0 || 'Obrigatório',
 };
 
+// Função para traduzir tipos de seção
+function translateSectionType(type: string): string {
+  const translations: Record<string, string> = {
+    CONSUMER: 'Consumidor',
+    STORAGE: 'Estoque',
+    CONSUMIDOR: 'Consumidor',
+    ESTOQUE: 'Estoque',
+  };
+  return translations[String(type).toUpperCase()] || type;
+}
+
 function openCreate() {
   editing.value = false;
-  form.value = { title: '', sectionType: 'CONSUMER', isActive: true, roleAccess: '' };
+  form.value = { title: '', sectionType: 'CONSUMIDOR', isActive: true };
   formError.value = null;
   dialog.value = true;
 }
@@ -268,9 +272,8 @@ function openEdit(item: any) {
   form.value = {
     id: item.id,
     title: item.title || '',
-    sectionType: (String(item.sectionType).toUpperCase() as any) || 'CONSUMER',
+    sectionType: (String(item.sectionType).toUpperCase() as any) || 'CONSUMIDOR',
     isActive: !!item.isActive,
-    roleAccess: item.roleAccess || '',
   };
   formError.value = null;
   dialog.value = true;
@@ -288,7 +291,6 @@ async function save() {
       title: form.value.title,
       sectionType: form.value.sectionType,
       isActive: !!form.value.isActive,
-      roleAccess: form.value.roleAccess || null,
     };
     if (editing.value && form.value.id != null) {
       await sectionStore.update({ id: form.value.id, ...payload });
