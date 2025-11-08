@@ -180,12 +180,12 @@ const filterActive = ref<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
 
 const typeOptions = [
   { title: 'Todos os tipos', value: 'ALL' },
-  { title: 'CONSUMIDOR', value: 'CONSUMIDOR' },
-  { title: 'ESTOQUE', value: 'ESTOQUE' },
+  { title: 'Consumidor', value: 'CONSUMER' },
+  { title: 'Estoque', value: 'STORAGE' },
 ];
 const typeOnlyOptions = [
-  { title: 'CONSUMIDOR', value: 'CONSUMIDOR' },
-  { title: 'ESTOQUE', value: 'ESTOQUE' },
+  { title: 'Consumidor', value: 'CONSUMER' },
+  { title: 'Estoque', value: 'STORAGE' },
 ];
 const activeOptions = [
   { title: 'Todos', value: 'ALL' },
@@ -236,11 +236,11 @@ const formValid = ref(true);
 const form = ref<{
   id?: number;
   title: string;
-  sectionType: 'CONSUMIDOR' | 'ESTOQUE';
+  sectionType: 'CONSUMER' | 'STORAGE';
   isActive: boolean;
 }>({
   title: '',
-  sectionType: 'CONSUMIDOR',
+  sectionType: 'CONSUMER',
   isActive: true,
 });
 const formError = ref<string | null>(null);
@@ -262,7 +262,7 @@ function translateSectionType(type: string): string {
 
 function openCreate() {
   editing.value = false;
-  form.value = { title: '', sectionType: 'CONSUMIDOR', isActive: true };
+  form.value = { title: '', sectionType: 'CONSUMER', isActive: true };
   formError.value = null;
   dialog.value = true;
 }
@@ -272,7 +272,7 @@ function openEdit(item: any) {
   form.value = {
     id: item.id,
     title: item.title || '',
-    sectionType: (String(item.sectionType).toUpperCase() as any) || 'CONSUMIDOR',
+    sectionType: (String(item.sectionType).toUpperCase() as any) || 'CONSUMER',
     isActive: !!item.isActive,
   };
   formError.value = null;

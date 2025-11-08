@@ -54,6 +54,7 @@ export const useSection = defineStore('section', () => {
       });
     } catch (e) {
       console.error('Failed to create section:', e);
+      throw e;
     }
   }
 
@@ -65,6 +66,7 @@ export const useSection = defineStore('section', () => {
       });
     } catch (e) {
       console.error('Failed to update section:', e);
+      throw e;
     }
   }
 
