@@ -189,12 +189,12 @@ export default {
           to: '/orders',
           value: 'orders',
         },
-		{
-		title: 'Ordens de Compra',
-		icon: 'mdi-file-document-edit-outline',
-		to: '/purchase-orders',
-		value: 'purchase-orders',
-		},
+        {
+          title: 'Ordens de Compra',
+          icon: 'mdi-file-document-edit-outline',
+          to: '/purchase-orders',
+          value: 'purchase-orders',
+        },
         {
           title: 'Validades',
           icon: 'mdi-calendar-alert',
@@ -206,6 +206,12 @@ export default {
           icon: 'mdi-view-grid',
           to: '/sections',
           value: 'sections',
+        },
+        {
+          title: 'Auditoria',
+          icon: 'mdi-shield-search',
+          to: '/audit',
+          value: 'audit',
         },
       ],
       auth: null,
@@ -255,7 +261,7 @@ export default {
     filteredMenuItems() {
       const role = this.auth?.user?.role;
       return this.menuItems.filter((m) => {
-        if (m.value === 'users' || m.value === 'sections') {
+        if (m.value === 'users' || m.value === 'sections' || m.value === 'audit') {
           return role === 'ADMIN';
         }
         return true;
