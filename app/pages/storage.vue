@@ -76,6 +76,45 @@
             >
               Atualizar
             </v-btn>
+            <v-menu v-model="reportMenuOpen" :close-on-content-click="false" offset-y>
+              <template #activator="{ props }">
+                <v-btn
+                  v-bind="props"
+                  size="x-small"
+                  variant="text"
+                  color="primary"
+                  class="ml-2"
+                >
+                  <v-icon class="mr-2">mdi-file-download</v-icon>
+                  Gerar Relatório
+                </v-btn>
+              </template>
+
+              <v-card style="min-width: 240px;">
+                <v-card-text>
+                  <div class="mb-3">
+                    <label class="text-xs text-slate-500">Formato</label>
+                    <v-select v-model="reportFormat" :items="['pdf','excel']" dense />
+                  </div>
+
+                  <div class="mb-3">
+                    <label class="text-xs text-slate-500">Seção</label>
+                    <v-select
+                      v-model="reportSectionId"
+                      :items="reportSections"
+                      item-title="title"
+                      item-value="id"
+                      dense
+                    />
+                  </div>
+
+                  <div class="d-flex justify-end gap-2">
+                    <v-btn size="small" variant="text" @click="reportFormat='pdf'">PDF</v-btn>
+                    <v-btn size="small" color="primary" @click="() => { onGenerateReport(); reportMenuOpen = false; }">Gerar</v-btn>
+                  </div>
+                </v-card-text>
+              </v-card>
+            </v-menu>
           </div>
         </div>
       </div>
@@ -247,9 +286,11 @@ definePageMeta({ layout: 'default' });
 <script>
 import { useAuthStore } from '~/stores/auth';
 import { useStorage } from '~/stores/storage';
+import { useReports } from '~/stores/reports';
 import StorageItemSidebar from '~/components/sidebars/storage-item.vue';
 import LossSidebar from '~/components/sidebars/loss.vue';
 import { useSidebarStore } from '~/stores/sidebar';
+import { useSection } from '~/stores/section';
 import { useItemLoss } from '~/stores/itemLoss';
 
 export default {
@@ -274,6 +315,10 @@ export default {
         { title: 'Ações', key: 'actions', sortable: false, width: 110 },
         // { title: "QR", key: "qrCode" },
       ],
+  reportFormat: 'pdf',
+  reportSectionId: null,
+  generatingReport: false,
+  reportMenuOpen: false,
       sidebar: null,
       historyDialog: false,
       historyData: [],
@@ -292,6 +337,8 @@ export default {
     this.auth = useAuthStore();
     this.storage = useStorage();
     this.sidebar = useSidebarStore();
+    this.reports = useReports();
+    this.sectionStore = useSection();
     this.itemLossStore = useItemLoss();
   },
   async mounted() {
@@ -303,6 +350,12 @@ export default {
       }
     }
     await this.fetchData();
+    // load all sections for report selection (admins should see all)
+    try {
+      await this.sectionStore.list();
+    } catch (e) {
+      // ignore errors (permissions) — we'll fall back to userSections
+    }
   },
   computed: {
     filteredData() {
@@ -349,6 +402,16 @@ export default {
     userRole() {
       return this.auth?.user?.role || 'DEFAULT';
     },
+    reportSections() {
+      // prefer showing all sections (for admin) otherwise show user's sections
+      const all = (this.sectionStore && Array.isArray(this.sectionStore.sections))
+        ? this.sectionStore.sections.map(s => ({ title: s.title, id: s.id }))
+        : [];
+      const user = (this.userSections || []).map(s => ({ title: s.title, id: s.id }));
+      const combined = all.length ? all : user;
+      // add an option for "Todas"
+      return [{ title: 'Todas', id: null }, ...combined];
+    },
   },
   methods: {
     onItemUpdated() {
@@ -386,6 +449,38 @@ export default {
       } finally {
         this.historyLoading = false;
       }
+    },
+    async onGenerateReport() {
+      // determine sectionId: if not selected and user is not ADMIN, use user's first section
+      let sectionId = this.reportSectionId;
+      if (!sectionId && this.userRole !== 'ADMIN') {
+        sectionId = this.userSections.length ? this.userSections[0].id : null;
+      }
+      this.generatingReport = true;
+      try {
+        await this.generateReport(this.reportFormat, sectionId);
+      } catch (e) {
+        console.error('Erro ao gerar relatório', e);
+        // optionally show notification
+      } finally {
+        this.generatingReport = false;
+      }
+    },
+
+    async generateReport(format, sectionId) {
+      const f = (format || 'pdf').toLowerCase();
+      // use reports store to fetch the blob
+      const blob = await this.reports.generateStockReport(f, sectionId);
+      const ext = f === 'excel' ? 'xlsx' : 'pdf';
+      const secPart = sectionId ? `-${sectionId}` : '-all';
+      const filename = `stock-report${secPart}.${ext}`;
+      const link = document.createElement('a');
+      link.href = window.URL.createObjectURL(blob);
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(link.href);
     },
     formatDate(value) {
       if (!value) return '—';
