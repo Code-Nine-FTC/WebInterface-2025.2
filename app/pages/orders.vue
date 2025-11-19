@@ -64,6 +64,28 @@
             >
               Atualizar
             </v-btn>
+
+            <!-- Report menu -->
+            <v-menu v-model="reportMenuOpenOrders" :close-on-content-click="false" offset-y>
+              <template #activator="{ props }">
+                <v-btn v-bind="props" size="x-small" variant="text" color="primary" class="ml-2">
+                  <v-icon class="mr-2">mdi-file-download</v-icon>
+                  Gerar Relatório
+                </v-btn>
+              </template>
+              <v-card style="min-width: 220px;">
+                <v-card-text>
+                  <div class="mb-3">
+                    <label class="text-xs text-slate-500">Formato</label>
+                    <v-select v-model="reportFormatOrders" :items="['pdf','excel']" dense />
+                  </div>
+                  <div class="d-flex justify-end gap-2">
+                    <v-btn size="small" variant="text" @click="reportFormatOrders='pdf'">PDF</v-btn>
+                    <v-btn size="small" color="primary" :loading="generatingReportOrders" @click="handleGenerateOrdersReport">Gerar</v-btn>
+                  </div>
+                </v-card-text>
+              </v-card>
+            </v-menu>
           </div>
         </div>
       </div>
@@ -162,6 +184,7 @@ import { useSupplier } from '~/stores/supplier';
 import { useStorage } from '~/stores/storage';
 import { useSidebarStore } from '~/stores/sidebar';
 import { useOrders } from '~/stores/orders';
+import { useReports } from '~/stores/reports';
 import { defineAsyncComponent } from 'vue';
 import { formatDate } from '~/utils';
 
@@ -221,6 +244,10 @@ export default {
         { title: 'Último usuário', key: 'lastUserName' },
         { title: 'Ações', key: 'actions', sortable: false, width: 100 },
       ],
+      // report UI state
+      reportFormatOrders: 'pdf',
+      reportMenuOpenOrders: false,
+      generatingReportOrders: false,
     };
   },
   computed: {
@@ -228,7 +255,7 @@ export default {
       const q = (this.search || '').toLowerCase().trim();
       const data = (this.orders || []).map((o) => {
         const itemsCount =
-          // valores numéricos diretos
+          // numeric direct values
           (typeof o.itemsCount === 'number'
             ? o.itemsCount
             : typeof o.items_count === 'number'
@@ -236,7 +263,7 @@ export default {
               : typeof o.itensCount === 'number'
                 ? o.itensCount
                 : null) ??
-          // arrays comuns
+          // common arrays
           (Array.isArray(o.items)
             ? o.items.length
             : Array.isArray(o.itens)
@@ -244,7 +271,7 @@ export default {
               : Array.isArray(o.itemIds)
                 ? o.itemIds.length
                 : null) ??
-          // objeto de quantidades (conta itens distintos)
+          // object of quantities
           (o.itemQuantities && typeof o.itemQuantities === 'object'
             ? Object.keys(o.itemQuantities).length
             : 0);
@@ -257,16 +284,10 @@ export default {
           lastUpdate: o.updatedAt || o.createdAt || o.lastUpdate,
         };
       });
-      const byStatus =
-        this.activeStatus === 'ALL' ? data : data.filter((o) => o.statusKey === this.activeStatus);
+      const byStatus = this.activeStatus === 'ALL' ? data : data.filter((o) => o.statusKey === this.activeStatus);
       if (!q) return byStatus;
       return byStatus.filter((o) =>
-        [
-          String(o.id),
-          o.status,
-          this.statusLabel(o.status),
-          o.withdrawDay && new Date(o.withdrawDay).toLocaleDateString('pt-BR'),
-        ]
+        [String(o.id), o.status, this.statusLabel(o.status), o.withdrawDay && new Date(o.withdrawDay).toLocaleDateString('pt-BR')]
           .filter(Boolean)
           .some((v) => String(v).toLowerCase().includes(q)),
       );
@@ -281,9 +302,7 @@ export default {
           name: s.name || s.nomeFantasia || s.razaoSocial || '#' + s.id,
           lastUpdate: s.lastUpdate || s.updatedAt || s.createdAt || null,
         }))
-        .sort(
-          (a, b) => new Date(b.lastUpdate || 0).getTime() - new Date(a.lastUpdate || 0).getTime(),
-        )
+        .sort((a, b) => new Date(b.lastUpdate || 0).getTime() - new Date(a.lastUpdate || 0).getTime())
         .slice(0, 5);
     },
     criticalItems() {
@@ -303,6 +322,7 @@ export default {
     this.sidebar = useSidebarStore();
     console.log('Sidebar created, isOpen:', this.sidebar.isOpen, 'payload:', this.sidebar.payload);
     this.ordersStore = useOrders();
+    this.reports = useReports();
     await this.fetchAll();
   },
   methods: {
@@ -384,6 +404,31 @@ export default {
     viewOrder(item) {
       const id = item?.id ?? item;
       this.sidebar?.open({ mode: 'view', orderId: id });
+    },
+    async onGenerateOrdersReport() {
+      this.generatingReportOrders = true;
+      try {
+        const blob = await this.reports.generateOrdersReport(this.reportFormatOrders);
+        const ext = this.reportFormatOrders === 'excel' ? 'xlsx' : 'pdf';
+        const filename = `orders-report.${ext}`;
+        const link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(link.href);
+      } catch (e) {
+        console.error('Erro ao gerar relatório de pedidos', e);
+      } finally {
+        this.generatingReportOrders = false;
+      }
+    },
+    handleGenerateOrdersReport() {
+      // close menu and start generation
+      this.reportMenuOpenOrders = false;
+      // run generation (no await so menu close happens immediately)
+      this.onGenerateOrdersReport();
     },
   },
   components: {
