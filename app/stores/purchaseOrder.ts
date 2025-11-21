@@ -3,17 +3,17 @@ import { ref } from 'vue';
 import { useAuthStore } from './auth';
 
 export const usePurchaseOrder = defineStore('purchaseOrder', () => {
-  const orders = ref<Array<any>>([]);
+  const purchaseOrders = ref<Array<any>>([]);
   const { $api } = useNuxtApp();
 
   async function list(params = {}) {
     try {
       const res: any = await $api('/purchase-orders/all', { params });
-      if (Array.isArray(res)) orders.value = res;
-      else if (res?.orders) orders.value = res.orders;
-      else if (res?.data) orders.value = res.data;
-      else orders.value = [];
-      return orders.value;
+      if (Array.isArray(res)) purchaseOrders.value = res;
+      else if (res?.orders) purchaseOrders.value = res.orders;
+      else if (res?.data) purchaseOrders.value = res.data;
+      else purchaseOrders.value = [];
+      return purchaseOrders.value;
     } catch (e) {
       return [];
     }
@@ -31,10 +31,7 @@ export const usePurchaseOrder = defineStore('purchaseOrder', () => {
       processNumber: payload.processNumber,
       totalValue: payload.totalValue,
       issueDate: payload.issueDate,
-      status: payload.status,
-      emailStatus: payload.emailStatus,
       supplierCompanyId: payload.supplierCompanyId,
-      orderId: payload.orderId,
     };
 
     return await $api('/purchase-orders/', {
@@ -60,10 +57,7 @@ export const usePurchaseOrder = defineStore('purchaseOrder', () => {
       processNumber: payload.processNumber,
       totalValue: payload.totalValue,
       issueDate: payload.issueDate,
-      status: payload.status,
-      emailStatus: payload.emailStatus,
       supplierCompanyId: payload.supplierCompanyId,
-      orderId: payload.orderId,
     };
 
     return await $api(`/purchase-orders/${payload.id}`, {
@@ -83,6 +77,7 @@ export const usePurchaseOrder = defineStore('purchaseOrder', () => {
       if (!res) return null;
       return {
         id: res.purchaseOrderId ?? res.id,
+        purchaseOrderNumber: res.purchaseOrderNumber,
         commitmentNoteNumber: res.commitmentNoteNumber,
         issuingBody: res.issuingBody,
         year: res.year,
@@ -94,8 +89,6 @@ export const usePurchaseOrder = defineStore('purchaseOrder', () => {
         supplierCompanyId: res.supplierCompanyId,
         supplierCompanyName: res.supplierCompanyName,
         supplierCompanyEmail: res.supplierCompanyEmail,
-        orderId: res.orderId,
-        orderStatus: res.orderStatus,
         createdAt: res.createdAt,
         lastUpdate: res.lastUpdate,
         senderId: res.senderId,
@@ -166,6 +159,6 @@ export const usePurchaseOrder = defineStore('purchaseOrder', () => {
     getById,
     updateStatus,
     sendEmail,
-    orders,
+    purchaseOrders,
   };
 });
