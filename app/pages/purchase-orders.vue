@@ -8,7 +8,7 @@
           density="compact"
           variant="outlined"
           label="Pesquisar"
-          placeholder="Buscar por Nº NE, fornecedor, valor, status..."
+          placeholder="Buscar por Nº OC, Nº NE, fornecedor, valor, status..."
           append-inner-icon="mdi-magnify"
           class="flex-1"
         />
@@ -86,7 +86,7 @@
                       icon="mdi-eye"
                       variant="text"
                       color="primary"
-                      @click="viewOrder(item)"
+                      @click="viewPurchaseOrder(item)"
                     />
                   </template>
                 </v-tooltip>
@@ -123,8 +123,8 @@
     </v-card>
     <PurchaseOrderSidebar
       v-if="sidebar.isOpen"
-      @created="handleOrderCreated"
-      @updated="handleOrderUpdated"
+      @created="handlePurchaseOrderCreated"
+      @updated="handlePurchaseOrderUpdated"
     />
   </div>
 </template>
@@ -137,7 +137,7 @@ definePageMeta({ layout: 'default', middleware: 'auth' });
 import { useSidebarStore } from '~/stores/sidebar';
 import { usePurchaseOrder } from '~/stores/purchaseOrder';
 import { defineAsyncComponent } from 'vue';
-import { formatDate } from '~/utils';
+import { formatDate, formatCurrency } from '~/utils';
 
 export default {
   data() {
@@ -147,9 +147,9 @@ export default {
       search: '',
       loading: false,
       lastUpdated: Date.now(),
-      orders: [],
+      purchaseOrders: [],
       headers: [
-        { title: 'ID', key: 'id', width: 80 },
+        { title: 'Nº OC', key: 'purchaseOrderNumber', width: 140 },
         { title: 'Nº NE', key: 'commitmentNoteNumber', width: 120 },
         { title: 'Órgão Emissor', key: 'issuingBody' },
         { title: 'Ano', key: 'year', width: 80 },
@@ -166,10 +166,10 @@ export default {
   computed: {
     filteredData() {
       const q = (this.search || '').toLowerCase().trim();
-      const data = (this.orders || []).map((o) => ({
+      const data = (this.purchaseOrders || []).map((o) => ({
         ...o,
         supplierCompanyName: o.supplierCompanyName || o.supplierName || '',
-        totalValue: o.totalValue || 0,
+        totalValue: formatCurrency(o.totalValue || 0),
         // show only the date in a readable format (pt-BR) instead of full datetime
         issueDate: (function (v) {
           if (!v) return '';
@@ -208,6 +208,7 @@ export default {
   },
   methods: {
     formatDate,
+    formatCurrency,
     statusLabel(s) {
       const map = {
         PENDING_DELIVERY: 'Pendente',
@@ -239,8 +240,8 @@ export default {
     async fetchAll() {
       this.loading = true;
       try {
-        const orders = await this.purchaseOrderStore.list();
-        this.orders = orders;
+        const purchaseOrders = await this.purchaseOrderStore.list();
+        this.purchaseOrders = purchaseOrders;
         this.lastUpdated = Date.now();
       } finally {
         this.loading = false;
@@ -249,21 +250,23 @@ export default {
     openSidebar() {
       this.sidebar.open({ mode: 'create' });
     },
-    async handleOrderCreated() {
+    async handlePurchaseOrderCreated() {
       await this.fetchAll();
     },
-    handleOrderUpdated(p) {
+    handlePurchaseOrderUpdated(p) {
       if (!p?.id) return;
-      this.orders = (this.orders || []).map((o) => (o.id === p.id ? { ...o, ...p } : o));
+      this.purchaseOrders = (this.purchaseOrders || []).map((o) =>
+        o.id === p.id ? { ...o, ...p } : o,
+      );
       this.lastUpdated = Date.now();
     },
-    viewOrder(item) {
+    viewPurchaseOrder(item) {
       const id = item?.id ?? item;
-      this.sidebar.open({ mode: 'edit', orderId: id });
+      this.sidebar.open({ mode: 'edit', purchaseOrderId: id });
     },
     authorizeEmail(item) {
       const id = item?.id ?? item;
-      this.sidebar.open({ mode: 'authorize-email', orderId: id });
+      this.sidebar.open({ mode: 'authorize-email', purchaseOrderId: id });
     },
     async markDelivered(item) {
       if (!item?.id) return;

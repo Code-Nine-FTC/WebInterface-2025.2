@@ -42,6 +42,51 @@
           {{ k.loading ? '…' : k.value }}
         </div>
       </v-card>
+      <!-- Novo card de total de pedidos por sessão ou geral -->
+      <v-card class="kpi-card kpi-card-total pa-4 d-flex flex-column justify-space-between" elevation="2">
+        <div class="d-flex align-center justify-space-between mb-1">
+          <span class="text-caption text-medium-emphasis font-medium" style="flex-shrink:0;">
+            Total de Pedidos
+            <template v-if="userRole !== 'ADMIN' && userSectionsNames.length > 0">
+              <span style="margin-left: 12px; color: #64748b; font-size: 0.95em;">
+                (Sessão:
+                <template v-if="userSectionsNames.length === 1">
+                  {{ userSectionsNames[0] }}
+                </template>
+                <template v-else>
+                  {{ userSectionsNames.join(', ') }}
+                </template>
+                )
+              </span>
+            </template>
+          </span>
+          <template v-if="userRole === 'ADMIN'">
+            <div class="d-flex align-center" style="gap: 8px;">
+              <v-select
+                v-model="selectedAdminSection"
+                :items="allSectionsOptions"
+                item-title="name"
+                item-value="id"
+                placeholder="Filtrar sessão"
+                dense
+                clearable
+                variant="solo"
+                class="admin-section-select"
+                hide-details
+                style="min-width: 120px; max-width: 160px;"
+                prepend-inner-icon="mdi-view-grid-outline"
+              />
+              <span style="color: #64748b; font-size: 0.95em; min-width: 90px; text-align: right;">
+                {{ !selectedAdminSection ? 'Todas as Sessões' : (allSectionsOptions.find(s => s.id === selectedAdminSection)?.name || selectedAdminSection) }}
+              </span>
+            </div>
+          </template>
+          <v-icon icon="mdi-clipboard-list-outline" size="20" class="text-medium-emphasis ml-2" />
+        </div>
+        <div class="kpi-value">
+          {{ totalOrdersKpi }}
+        </div>
+      </v-card>
     </div>
 
     <v-card class="bg-white rounded-lg shadow-md pa-4 mb-6">
@@ -204,7 +249,9 @@ export default {
       lastUpdated: Date.now(),
       orders: [],
       activeStatus: 'ALL',
+      selectedAdminSection: null, // id da sessão selecionada pelo admin
       kpis: [
+            // ...
         {
           key: 'items',
           label: 'Itens',
@@ -251,6 +298,54 @@ export default {
     };
   },
   computed: {
+    allSectionsOptions() {
+      // Junta todas as sessões do sistema (de pedidos) para o select do admin
+      // Busca por sectionId/consumerSectionId e nome
+      const sectionMap = {};
+      (this.orders || []).forEach(o => {
+        const id = o.sectionId ?? o.consumerSectionId;
+        const name = o.sectionName ?? o.section?.name ?? o.section?.nome ?? o.section?.nomeFantasia ?? o.section?.razaoSocial;
+        if (id && !sectionMap[id]) {
+          sectionMap[id] = { id, name: name || id };
+        }
+      });
+      return Object.values(sectionMap);
+    },
+    userSectionsNames() {
+      // Retorna os nomes das sessões do usuário logado
+      const sections = this.auth?.user?.sections;
+      if (!sections || !Array.isArray(sections)) return [];
+      // Suporta objetos {id, name} ou apenas id
+      return sections
+        .map(s => {
+          if (typeof s === 'object') {
+            return s.name || s.nome || s.nomeFantasia || s.razaoSocial;
+          }
+          // Se for só id, não mostra nada
+          return null;
+        })
+        .filter(Boolean);
+    },
+    totalOrdersKpi() {
+      if (this.userRole === 'ADMIN') {
+        if (!this.selectedAdminSection) {
+          return this.orders.length;
+        }
+        // Filtra por sessão selecionada
+        return (this.orders || []).filter(o => {
+          const sectionId = o.sectionId ?? o.consumerSectionId;
+          return sectionId == this.selectedAdminSection;
+        }).length;
+      }
+      // Usuário comum: filtra pedidos pela(s) sessão(ões) do usuário
+      const userSections = this.auth?.user?.sections;
+      if (!userSections || userSections.length === 0) return 0;
+      // Suporta orders com campo sectionId ou consumerSectionId
+      return (this.orders || []).filter(o => {
+        const sectionId = o.sectionId ?? o.consumerSectionId;
+        return userSections.some(s => s.id === sectionId || s === sectionId);
+      }).length;
+    },
     filteredData() {
       const q = (this.search || '').toLowerCase().trim();
       const data = (this.orders || []).map((o) => {
@@ -442,6 +537,11 @@ export default {
   min-height: 110px;
   position: relative;
 }
+.kpi-card-total {
+  min-height: 170px;
+  padding-top: 32px !important;
+  padding-bottom: 32px !important;
+}
 
 .kpi-value {
   font-size: 1.9rem;
@@ -455,4 +555,20 @@ export default {
   gap: 16px;
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
 }
+.admin-section-select .v-field__input {
+  min-height: 28px !important;
+  font-size: 0.98em;
+  padding-top: 0px;
+  padding-bottom: 0px;
+}
+.admin-section-select .v-input__control {
+  min-height: 28px !important;
+}
+.admin-section-select .v-field {
+  border-radius: 5px !important;
+  background: #f4f6fa !important;
+  box-shadow: none !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
 </style>

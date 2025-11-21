@@ -75,6 +75,23 @@ export function getInitials(name: string) {
   return (first + last).toUpperCase();
 }
 
+export function formatCurrency(value: number | string) {
+  if (value === null || value === undefined || value === '') return 'R$ 0,00';
+  const num = typeof value === 'string' ? parseFloat(value) : value;
+  if (isNaN(num)) return 'R$ 0,00';
+  return num.toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  });
+}
+
+export function parseCurrency(value: string): number {
+  if (!value) return 0;
+  const cleaned = value.replace(/[R$\s.]/g, '').replace(',', '.');
+  const num = parseFloat(cleaned);
+  return isNaN(num) ? 0 : num;
+}
+
 export default {
   formatCNPJ,
   formatTelefone,
@@ -82,4 +99,6 @@ export default {
   roleColor,
   roleName,
   getInitials,
+  formatCurrency,
+  parseCurrency,
 };
