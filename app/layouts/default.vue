@@ -196,6 +196,12 @@ export default {
           value: 'purchase-orders',
         },
         {
+          title: 'Previsões IA',
+          icon: 'mdi-brain',
+          to: '/predictions',
+          value: 'predictions',
+        },
+        {
           title: 'Validades',
           icon: 'mdi-calendar-alert',
           to: '/expiry',
