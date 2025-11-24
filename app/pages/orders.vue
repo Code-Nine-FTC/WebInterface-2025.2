@@ -1,3 +1,5 @@
+watch: { selectedAdminSection(newVal, oldVal) { if (this.userRole === 'ADMIN') { // Chama fetchAll
+passando o filtro de sessão this.fetchAll(); } }, },
 <template>
   <div class="max-w-6xl mx-auto p-6">
     <v-card class="bg-white rounded-lg shadow-md pa-4 mb-6">
@@ -43,12 +45,18 @@
         </div>
       </v-card>
       <!-- Novo card de total de pedidos por sessão ou geral -->
-      <v-card class="kpi-card kpi-card-total pa-4 d-flex flex-column justify-space-between" elevation="2">
+      <v-card
+        class="kpi-card kpi-card-total pa-4 d-flex flex-column justify-space-between"
+        elevation="2"
+      >
         <div class="d-flex align-center justify-space-between mb-1">
-          <span class="text-caption text-medium-emphasis font-medium" style="flex-shrink:0;">
+          <span
+            class="text-caption text-medium-emphasis font-medium"
+            style="flex-shrink: 1; white-space: nowrap"
+          >
             Total de Pedidos
             <template v-if="userRole !== 'ADMIN' && userSectionsNames.length > 0">
-              <span style="margin-left: 12px; color: #64748b; font-size: 0.95em;">
+              <span style="margin-left: 12px; color: #64748b; font-size: 0.95em">
                 (Sessão:
                 <template v-if="userSectionsNames.length === 1">
                   {{ userSectionsNames[0] }}
@@ -60,27 +68,6 @@
               </span>
             </template>
           </span>
-          <template v-if="userRole === 'ADMIN'">
-            <div class="d-flex align-center" style="gap: 8px;">
-              <v-select
-                v-model="selectedAdminSection"
-                :items="allSectionsOptions"
-                item-title="name"
-                item-value="id"
-                placeholder="Filtrar sessão"
-                dense
-                clearable
-                variant="solo"
-                class="admin-section-select"
-                hide-details
-                style="min-width: 120px; max-width: 160px;"
-                prepend-inner-icon="mdi-view-grid-outline"
-              />
-              <span style="color: #64748b; font-size: 0.95em; min-width: 90px; text-align: right;">
-                {{ !selectedAdminSection ? 'Todas as Sessões' : (allSectionsOptions.find(s => s.id === selectedAdminSection)?.name || selectedAdminSection) }}
-              </span>
-            </div>
-          </template>
           <v-icon icon="mdi-clipboard-list-outline" size="20" class="text-medium-emphasis ml-2" />
         </div>
         <div class="kpi-value">
@@ -91,10 +78,52 @@
 
     <v-card class="bg-white rounded-lg shadow-md pa-4 mb-6">
       <div class="px-4 py-3 border-b border-slate-100">
-        <div class="d-flex items-center gap-2 text-xs text-slate-500">
+        <div
+          class="d-flex items-center gap-2 text-xs text-slate-500 flex-wrap align-center"
+          style="min-height: 56px"
+        >
           <v-icon icon="mdi-account-multiple" class="mr-1" />
           <span>Pedidos</span>
-
+          <v-chip color="primary" size="small" variant="tonal" class="font-bold ml-2">
+            {{ totalOrdersKpi }}
+          </v-chip>
+          <template v-if="userRole === 'ADMIN'">
+            <div
+              class="admin-section-select-wrapper align-end"
+              style="
+                margin-bottom: 0;
+                margin-top: 0;
+                display: flex;
+                flex-direction: column;
+                justify-content: flex-end;
+              "
+            >
+              <label
+                class="admin-section-label"
+                style="margin-bottom: 2px; margin-left: 4px"
+              ></label>
+              <v-select
+                v-model="selectedAdminSection"
+                :items="allSectionsOptions"
+                item-title="name"
+                item-value="id"
+                placeholder="Sessão"
+                density="comfortable"
+                clearable
+                variant="outlined"
+                class="admin-section-select"
+                hide-details
+                style="
+                  min-width: 140px;
+                  max-width: 200px;
+                  font-size: 1em;
+                  height: 40px;
+                  margin-top: 0;
+                "
+                prepend-inner-icon="mdi-view-grid-outline"
+              />
+            </div>
+          </template>
           <div class="ml-auto flex items-center gap-2">
             <span class="hidden sm:inline text-slate-500">Última atualização:</span>
             <v-chip color="green" size="x-small" variant="tonal" class="font-medium">
@@ -118,15 +147,24 @@
                   Gerar Relatório
                 </v-btn>
               </template>
-              <v-card style="min-width: 220px;">
+              <v-card style="min-width: 220px">
                 <v-card-text>
                   <div class="mb-3">
                     <label class="text-xs text-slate-500">Formato</label>
-                    <v-select v-model="reportFormatOrders" :items="['pdf','excel']" dense />
+                    <v-select v-model="reportFormatOrders" :items="['pdf', 'excel']" dense />
                   </div>
                   <div class="d-flex justify-end gap-2">
-                    <v-btn size="small" variant="text" @click="reportFormatOrders='pdf'">PDF</v-btn>
-                    <v-btn size="small" color="primary" :loading="generatingReportOrders" @click="handleGenerateOrdersReport">Gerar</v-btn>
+                    <v-btn size="small" variant="text" @click="reportFormatOrders = 'pdf'">
+                      PDF
+                    </v-btn>
+                    <v-btn
+                      size="small"
+                      color="primary"
+                      :loading="generatingReportOrders"
+                      @click="handleGenerateOrdersReport"
+                    >
+                      Gerar
+                    </v-btn>
                   </div>
                 </v-card-text>
               </v-card>
@@ -251,7 +289,7 @@ export default {
       activeStatus: 'ALL',
       selectedAdminSection: null, // id da sessão selecionada pelo admin
       kpis: [
-            // ...
+        // ...
         {
           key: 'items',
           label: 'Itens',
@@ -302,9 +340,14 @@ export default {
       // Junta todas as sessões do sistema (de pedidos) para o select do admin
       // Busca por sectionId/consumerSectionId e nome
       const sectionMap = {};
-      (this.orders || []).forEach(o => {
+      (this.orders || []).forEach((o) => {
         const id = o.sectionId ?? o.consumerSectionId;
-        const name = o.sectionName ?? o.section?.name ?? o.section?.nome ?? o.section?.nomeFantasia ?? o.section?.razaoSocial;
+        const name =
+          o.sectionName ??
+          o.section?.name ??
+          o.section?.nome ??
+          o.section?.nomeFantasia ??
+          o.section?.razaoSocial;
         if (id && !sectionMap[id]) {
           sectionMap[id] = { id, name: name || id };
         }
@@ -317,7 +360,7 @@ export default {
       if (!sections || !Array.isArray(sections)) return [];
       // Suporta objetos {id, name} ou apenas id
       return sections
-        .map(s => {
+        .map((s) => {
           if (typeof s === 'object') {
             return s.name || s.nome || s.nomeFantasia || s.razaoSocial;
           }
@@ -332,7 +375,7 @@ export default {
           return this.orders.length;
         }
         // Filtra por sessão selecionada
-        return (this.orders || []).filter(o => {
+        return (this.orders || []).filter((o) => {
           const sectionId = o.sectionId ?? o.consumerSectionId;
           return sectionId == this.selectedAdminSection;
         }).length;
@@ -341,16 +384,15 @@ export default {
       const userSections = this.auth?.user?.sections;
       if (!userSections || userSections.length === 0) return 0;
       // Suporta orders com campo sectionId ou consumerSectionId
-      return (this.orders || []).filter(o => {
+      return (this.orders || []).filter((o) => {
         const sectionId = o.sectionId ?? o.consumerSectionId;
-        return userSections.some(s => s.id === sectionId || s === sectionId);
+        return userSections.some((s) => s.id === sectionId || s === sectionId);
       }).length;
     },
     filteredData() {
       const q = (this.search || '').toLowerCase().trim();
-      const data = (this.orders || []).map((o) => {
+      let data = (this.orders || []).map((o) => {
         const itemsCount =
-          // numeric direct values
           (typeof o.itemsCount === 'number'
             ? o.itemsCount
             : typeof o.items_count === 'number'
@@ -358,7 +400,6 @@ export default {
               : typeof o.itensCount === 'number'
                 ? o.itensCount
                 : null) ??
-          // common arrays
           (Array.isArray(o.items)
             ? o.items.length
             : Array.isArray(o.itens)
@@ -366,7 +407,6 @@ export default {
               : Array.isArray(o.itemIds)
                 ? o.itemIds.length
                 : null) ??
-          // object of quantities
           (o.itemQuantities && typeof o.itemQuantities === 'object'
             ? Object.keys(o.itemQuantities).length
             : 0);
@@ -379,10 +419,25 @@ export default {
           lastUpdate: o.updatedAt || o.createdAt || o.lastUpdate,
         };
       });
-      const byStatus = this.activeStatus === 'ALL' ? data : data.filter((o) => o.statusKey === this.activeStatus);
+
+      // Filtro por sessão para ADMIN
+      if (this.userRole === 'ADMIN' && this.selectedAdminSection) {
+        data = data.filter((o) => {
+          const sectionId = o.sectionId ?? o.consumerSectionId;
+          return sectionId == this.selectedAdminSection;
+        });
+      }
+
+      const byStatus =
+        this.activeStatus === 'ALL' ? data : data.filter((o) => o.statusKey === this.activeStatus);
       if (!q) return byStatus;
       return byStatus.filter((o) =>
-        [String(o.id), o.status, this.statusLabel(o.status), o.withdrawDay && new Date(o.withdrawDay).toLocaleDateString('pt-BR')]
+        [
+          String(o.id),
+          o.status,
+          this.statusLabel(o.status),
+          o.withdrawDay && new Date(o.withdrawDay).toLocaleDateString('pt-BR'),
+        ]
           .filter(Boolean)
           .some((v) => String(v).toLowerCase().includes(q)),
       );
@@ -397,7 +452,9 @@ export default {
           name: s.name || s.nomeFantasia || s.razaoSocial || '#' + s.id,
           lastUpdate: s.lastUpdate || s.updatedAt || s.createdAt || null,
         }))
-        .sort((a, b) => new Date(b.lastUpdate || 0).getTime() - new Date(a.lastUpdate || 0).getTime())
+        .sort(
+          (a, b) => new Date(b.lastUpdate || 0).getTime() - new Date(a.lastUpdate || 0).getTime(),
+        )
         .slice(0, 5);
     },
     criticalItems() {
@@ -455,11 +512,18 @@ export default {
       this.suppliersLoading = true;
       this.itemsLoading = true;
       try {
-        const [suppliers, items, orders] = await Promise.all([
+        const [suppliers, items] = await Promise.all([
           this.supplierStore.list().catch(() => []),
           this.storageStore.list().catch(() => []),
-          this.ordersStore.list().catch(() => []),
         ]);
+        let orders;
+        if (this.userRole === 'ADMIN' && this.selectedAdminSection) {
+          orders = await this.ordersStore
+            .list({ sectionId: this.selectedAdminSection })
+            .catch(() => []);
+        } else {
+          orders = await this.ordersStore.list().catch(() => []);
+        }
         this.suppliers = suppliers;
         this.items = items;
         this.orders = orders;
@@ -555,20 +619,41 @@ export default {
   gap: 16px;
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
 }
+.kpi-card-admin-filter {
+  min-height: 40px;
+  border-radius: 8px;
+  background: #f8fafc !important;
+  box-shadow: 0 2px 8px #0001 !important;
+  border: 1px solid #e2e8f0 !important;
+}
+.admin-section-select-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  margin-left: 12px;
+  margin-bottom: 0;
+  margin-top: 0;
+  justify-content: flex-end;
+}
+.admin-section-label {
+  font-size: 0.85em;
+  color: #888;
+  margin-bottom: 2px;
+  margin-left: 4px;
+}
 .admin-section-select .v-field__input {
-  min-height: 28px !important;
-  font-size: 0.98em;
+  min-height: 38px !important;
+  font-size: 1em;
   padding-top: 0px;
   padding-bottom: 0px;
 }
 .admin-section-select .v-input__control {
-  min-height: 28px !important;
+  min-height: 38px !important;
 }
 .admin-section-select .v-field {
-  border-radius: 5px !important;
-  background: #f4f6fa !important;
+  border-radius: 12px !important;
+  background: #fff !important;
   box-shadow: none !important;
-  border: 1px solid #e2e8f0 !important;
+  border: 1.5px solid #d1d5db !important;
 }
-
 </style>
