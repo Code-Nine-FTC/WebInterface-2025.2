@@ -529,6 +529,29 @@ export default {
         this.loading = false;
       }
     },
+    async submitAuthorize() {
+      this.authorizeError = null;
+      if (this.$refs.authorizeFormRef) {
+        const ok = await this.$refs.authorizeFormRef.validate();
+        if (!ok.valid) return;
+      }
+      if (!this.sidebar.payload?.purchaseOrderId) {
+        this.authorizeError = 'ID da ordem de compra não encontrado.';
+        return;
+      }
+      this.loading = true;
+      try {
+        const files = this.attachments && this.attachments.length > 0 ? this.attachments : null;
+        await this.purchaseOrderStore.sendEmail(this.sidebar.payload.purchaseOrderId, files);
+        this.$emit('updated');
+        this.sidebar.close();
+        this.reset();
+      } catch (e) {
+        this.authorizeError = e?.message || 'Falha ao enviar e-mail. Tente novamente.';
+      } finally {
+        this.loading = false;
+      }
+    },
   },
 };
 </script>
