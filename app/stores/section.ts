@@ -48,12 +48,15 @@ export const useSection = defineStore('section', () => {
 
   async function create(payload: Record<string, any>) {
     try {
-      return await $api('/sections', {
+      const result = await $api('/sections', {
         method: 'POST',
         body: payload,
       });
+
+      return result;
     } catch (e) {
       console.error('Failed to create section:', e);
+      throw e;
     }
   }
 
@@ -65,6 +68,7 @@ export const useSection = defineStore('section', () => {
       });
     } catch (e) {
       console.error('Failed to update section:', e);
+      throw e;
     }
   }
 

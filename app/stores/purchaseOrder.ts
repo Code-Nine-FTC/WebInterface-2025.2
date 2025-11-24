@@ -1,76 +1,83 @@
-import { defineStore } from "pinia";
-import { ref } from "vue";
+import { defineStore } from 'pinia';
+import { ref } from 'vue';
+import { useAuthStore } from './auth';
 
-export const usePurchaseOrder = defineStore("purchaseOrder", () => {
-  const orders = ref<Array<any>>([]);
+export const usePurchaseOrder = defineStore('purchaseOrder', () => {
+  const purchaseOrders = ref<Array<any>>([]);
   const { $api } = useNuxtApp();
 
   async function list(params = {}) {
     try {
-      const res: any = await $api("/purchase-orders/all", { params });
-      if (Array.isArray(res)) orders.value = res;
-      else if (res?.orders) orders.value = res.orders;
-      else if (res?.data) orders.value = res.data;
-      else orders.value = [];
-      return orders.value;
+      const res: any = await $api('/purchase-orders/all', { params });
+      if (Array.isArray(res)) purchaseOrders.value = res;
+      else if (res?.orders) purchaseOrders.value = res.orders;
+      else if (res?.data) purchaseOrders.value = res.data;
+      else purchaseOrders.value = [];
+      return purchaseOrders.value;
     } catch (e) {
-      console.error("Failed to list purchase orders:", e);
       return [];
     }
   }
 
   async function create(payload: Record<string, any>) {
-    try {
-      const body = {
-        commitmentNoteNumber: payload.commitmentNoteNumber,
-        issuingBody: payload.issuingBody,
-        year: payload.year,
-        processNumber: payload.processNumber,
-        totalValue: payload.totalValue,
-        issueDate: payload.issueDate,
-        status: payload.status,
-        emailStatus: payload.emailStatus,
-        supplierCompanyId: payload.supplierCompanyId,
-        orderId: payload.orderId,
-      };
-      return await $api("/purchase-orders/", {
-        method: "POST",
-        body,
-      });
-    } catch (e) {
-      console.error("Failed to create purchase order:", e);
-    }
+    const auth = useAuthStore();
+    const tokenCookie = useCookie<string | null>('token');
+    const token = auth.token || tokenCookie.value;
+
+    const body = {
+      commitmentNoteNumber: payload.commitmentNoteNumber,
+      issuingBody: payload.issuingBody,
+      year: payload.year,
+      processNumber: payload.processNumber,
+      totalValue: payload.totalValue,
+      issueDate: payload.issueDate,
+      supplierCompanyId: payload.supplierCompanyId,
+    };
+
+    return await $api('/purchase-orders/', {
+      method: 'POST',
+      body,
+      headers: token
+        ? {
+            Authorization: `Bearer ${token}`,
+          }
+        : {},
+    });
   }
 
   async function update(payload: Record<string, any>) {
-    try {
-      const body = {
-        commitmentNoteNumber: payload.commitmentNoteNumber,
-        issuingBody: payload.issuingBody,
-        year: payload.year,
-        processNumber: payload.processNumber,
-        totalValue: payload.totalValue,
-        issueDate: payload.issueDate,
-        status: payload.status,
-        emailStatus: payload.emailStatus,
-        supplierCompanyId: payload.supplierCompanyId,
-        orderId: payload.orderId,
-      };
-      return await $api(`/purchase-orders/${payload.id}`, {
-        method: "PUT",
-        body,
-      });
-    } catch (e) {
-      console.error("Failed to update purchase order:", e);
-    }
+    const auth = useAuthStore();
+    const tokenCookie = useCookie<string | null>('token');
+    const token = auth.token || tokenCookie.value;
+
+    const body = {
+      commitmentNoteNumber: payload.commitmentNoteNumber,
+      issuingBody: payload.issuingBody,
+      year: payload.year,
+      processNumber: payload.processNumber,
+      totalValue: payload.totalValue,
+      issueDate: payload.issueDate,
+      supplierCompanyId: payload.supplierCompanyId,
+    };
+
+    return await $api(`/purchase-orders/${payload.id}`, {
+      method: 'PUT',
+      body,
+      headers: token
+        ? {
+            Authorization: `Bearer ${token}`,
+          }
+        : {},
+    });
   }
 
-  async function getById(id: number|string) {
+  async function getById(id: number | string) {
     try {
       const res = await $api(`/purchase-orders/${id}`);
       if (!res) return null;
       return {
         id: res.purchaseOrderId ?? res.id,
+        purchaseOrderNumber: res.purchaseOrderNumber,
         commitmentNoteNumber: res.commitmentNoteNumber,
         issuingBody: res.issuingBody,
         year: res.year,
@@ -81,39 +88,67 @@ export const usePurchaseOrder = defineStore("purchaseOrder", () => {
         emailStatus: res.emailStatus,
         supplierCompanyId: res.supplierCompanyId,
         supplierCompanyName: res.supplierCompanyName,
-        orderId: res.orderId,
-        orderStatus: res.orderStatus,
+        supplierCompanyEmail: res.supplierCompanyEmail,
         createdAt: res.createdAt,
         lastUpdate: res.lastUpdate,
-  senderId: res.senderId,
-  senderName: res.senderName,
+        senderId: res.senderId,
+        senderName: res.senderName,
         createdById: res.createdById,
         createdByName: res.createdByName,
         lastUserId: res.lastUserId,
         lastUserName: res.lastUserName,
       };
     } catch (e) {
-      console.error("Failed to get purchase order by id:", e);
+      console.error('Failed to get purchase order by id:', e);
+      return null;
     }
   }
 
-  async function updateStatus(id: number|string, status: string) {
+  async function updateStatus(id: number | string, status: string) {
     try {
       return await $api(`/purchase-orders/${id}/status?status=${status}`, {
-        method: "PATCH",
+        method: 'PATCH',
       });
     } catch (e) {
-      console.error("Failed to update status:", e);
+      console.error('Failed to update status:', e);
+      throw e;
     }
   }
 
-  async function sendEmail(id: number|string) {
+  async function sendEmail(id: number | string, files?: File[]) {
     try {
-      return await $api(`/purchase-orders/${id}/send-email`, {
-        method: "POST",
-      });
+      const auth = useAuthStore();
+      const tokenCookie = useCookie<string | null>('token');
+      const token = auth.token || tokenCookie.value;
+
+      if (!token) {
+        throw new Error('Token de autenticação não encontrado. Faça login novamente.');
+      }
+
+      if (files && files.length > 0) {
+        const formData = new FormData();
+        files.forEach((file) => {
+          formData.append('files', file);
+        });
+
+        return await $api(`/purchase-orders/${id}/send-email`, {
+          method: 'POST',
+          body: formData,
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+      } else {
+        return await $api(`/purchase-orders/${id}/send-email`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+      }
     } catch (e) {
-      console.error("Failed to send email:", e);
+      console.error('Failed to send email:', e);
+      throw e;
     }
   }
 
@@ -124,6 +159,6 @@ export const usePurchaseOrder = defineStore("purchaseOrder", () => {
     getById,
     updateStatus,
     sendEmail,
-    orders,
+    purchaseOrders,
   };
 });

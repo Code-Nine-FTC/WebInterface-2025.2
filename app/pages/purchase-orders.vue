@@ -8,7 +8,7 @@
           density="compact"
           variant="outlined"
           label="Pesquisar"
-          placeholder="Buscar por Nº NE, fornecedor, valor, status..."
+          placeholder="Buscar por Nº OC, Nº NE, fornecedor, valor, status..."
           append-inner-icon="mdi-magnify"
           class="flex-1"
         />
@@ -57,12 +57,22 @@
             class="min-w-[900px]"
           >
             <template v-slot:item.status="{ item }">
-              <v-chip :color="statusColor(item.status)" size="small" label class="text-white font-medium">
+              <v-chip
+                :color="statusColor(item.status)"
+                size="small"
+                label
+                class="text-white font-medium"
+              >
                 {{ statusLabel(item.status) }}
               </v-chip>
             </template>
             <template v-slot:item.emailStatus="{ item }">
-              <v-chip :color="emailColor(item.emailStatus)" size="small" label class="text-white font-medium">
+              <v-chip
+                :color="emailColor(item.emailStatus)"
+                size="small"
+                label
+                class="text-white font-medium"
+              >
                 {{ emailLabel(item.emailStatus) }}
               </v-chip>
             </template>
@@ -70,17 +80,39 @@
               <div class="d-flex flex-row gap-1">
                 <v-tooltip text="Ver/Editar" location="top">
                   <template #activator="{ props }">
-                    <v-btn v-bind="props" size="small" icon="mdi-eye" variant="text" color="primary" @click="viewOrder(item)" />
+                    <v-btn
+                      v-bind="props"
+                      size="small"
+                      icon="mdi-eye"
+                      variant="text"
+                      color="primary"
+                      @click="viewPurchaseOrder(item)"
+                    />
                   </template>
                 </v-tooltip>
-                <v-tooltip text="Enviar E-mail" location="top">
+                <v-tooltip text="Autorizar Envio de E-mail" location="top">
                   <template #activator="{ props }">
-                    <v-btn v-bind="props" size="small" icon="mdi-email" variant="text" color="primary" @click.stop.prevent="sendEmail(item)" />
+                    <v-btn
+                      v-bind="props"
+                      size="small"
+                      icon="mdi-email-check"
+                      variant="text"
+                      color="primary"
+                      @click.stop.prevent="authorizeEmail(item)"
+                    />
                   </template>
                 </v-tooltip>
                 <v-tooltip text="Marcar como Entregue" location="top">
                   <template #activator="{ props }">
-                    <v-btn v-bind="props" size="small" icon="mdi-truck-check" variant="text" color="green" @click="markDelivered(item)" :disabled="item.status === 'DELIVERY'" />
+                    <v-btn
+                      v-bind="props"
+                      size="small"
+                      icon="mdi-truck-check"
+                      variant="text"
+                      color="green"
+                      @click="markDelivered(item)"
+                      :disabled="item.status === 'DELIVERY'"
+                    />
                   </template>
                 </v-tooltip>
               </div>
@@ -89,7 +121,11 @@
         </div>
       </div>
     </v-card>
-    <PurchaseOrderSidebar v-if="sidebar.isOpen" @created="handleOrderCreated" @updated="handleOrderUpdated" />
+    <PurchaseOrderSidebar
+      v-if="sidebar.isOpen"
+      @created="handlePurchaseOrderCreated"
+      @updated="handlePurchaseOrderUpdated"
+    />
   </div>
 </template>
 
@@ -101,7 +137,7 @@ definePageMeta({ layout: 'default', middleware: 'auth' });
 import { useSidebarStore } from '~/stores/sidebar';
 import { usePurchaseOrder } from '~/stores/purchaseOrder';
 import { defineAsyncComponent } from 'vue';
-import { formatDate } from '~/utils';
+import { formatDate, formatCurrency } from '~/utils';
 
 export default {
   data() {
@@ -111,8 +147,9 @@ export default {
       search: '',
       loading: false,
       lastUpdated: Date.now(),
-      orders: [],
+      purchaseOrders: [],
       headers: [
+        { title: 'Nº OC', key: 'purchaseOrderNumber', width: 140 },
         { title: 'Nº NE', key: 'commitmentNoteNumber', width: 120 },
         { title: 'Órgão Emissor', key: 'issuingBody' },
         { title: 'Ano', key: 'year', width: 80 },
@@ -122,41 +159,46 @@ export default {
         { title: 'Data de Emissão', key: 'issueDate', width: 140 },
         { title: 'Status Entrega', key: 'status', width: 120 },
         { title: 'Status E-mail', key: 'emailStatus', width: 120 },
-        { title: 'Ações', key: 'actions', sortable: false, width: 140 },
+        { title: 'Ações', key: 'actions', sortable: false, width: 160 },
       ],
     };
   },
   computed: {
     filteredData() {
       const q = (this.search || '').toLowerCase().trim();
-      const data = (this.orders || []).map((o) => ({
+      const data = (this.purchaseOrders || []).map((o) => ({
         ...o,
         supplierCompanyName: o.supplierCompanyName || o.supplierName || '',
-        totalValue: o.totalValue || 0,
+        totalValue: formatCurrency(o.totalValue || 0),
         // show only the date in a readable format (pt-BR) instead of full datetime
-        issueDate: (function(v) {
+        issueDate: (function (v) {
           if (!v) return '';
           try {
             const dt = new Date(v);
             if (isNaN(dt.getTime())) return String(v);
             return dt.toLocaleDateString('pt-BR');
-          } catch (e) { return String(v); }
+          } catch (e) {
+            return String(v);
+          }
         })(o.issueDate),
         status: o.status || '',
         emailStatus: o.emailStatus || '',
       }));
       if (!q) return data;
-      return data.filter((o) => [
-        o.commitmentNoteNumber,
-        o.issuingBody,
-        o.year,
-        o.processNumber,
-        o.supplierCompanyName,
-        o.totalValue,
-        o.issueDate,
-        o.status,
-        o.emailStatus
-      ].some((v) => String(v).toLowerCase().includes(q)));
+      return data.filter((o) =>
+        [
+          o.id,
+          o.commitmentNoteNumber,
+          o.issuingBody,
+          o.year,
+          o.processNumber,
+          o.supplierCompanyName,
+          o.totalValue,
+          o.issueDate,
+          o.status,
+          o.emailStatus,
+        ].some((v) => String(v).toLowerCase().includes(q)),
+      );
     },
   },
   async created() {
@@ -166,6 +208,7 @@ export default {
   },
   methods: {
     formatDate,
+    formatCurrency,
     statusLabel(s) {
       const map = {
         PENDING_DELIVERY: 'Pendente',
@@ -197,8 +240,8 @@ export default {
     async fetchAll() {
       this.loading = true;
       try {
-        const orders = await this.purchaseOrderStore.list();
-        this.orders = orders;
+        const purchaseOrders = await this.purchaseOrderStore.list();
+        this.purchaseOrders = purchaseOrders;
         this.lastUpdated = Date.now();
       } finally {
         this.loading = false;
@@ -207,22 +250,23 @@ export default {
     openSidebar() {
       this.sidebar.open({ mode: 'create' });
     },
-    async handleOrderCreated() {
+    async handlePurchaseOrderCreated() {
       await this.fetchAll();
     },
-    handleOrderUpdated(p) {
+    handlePurchaseOrderUpdated(p) {
       if (!p?.id) return;
-      this.orders = (this.orders || []).map((o) => (o.id === p.id ? { ...o, ...p } : o));
+      this.purchaseOrders = (this.purchaseOrders || []).map((o) =>
+        o.id === p.id ? { ...o, ...p } : o,
+      );
       this.lastUpdated = Date.now();
     },
-    viewOrder(item) {
+    viewPurchaseOrder(item) {
       const id = item?.id ?? item;
-      this.sidebar.open({ mode: 'edit', orderId: id });
+      this.sidebar.open({ mode: 'edit', purchaseOrderId: id });
     },
-    async sendEmail(item) {
-      if (!item?.id) return;
-      await this.purchaseOrderStore.sendEmail(item.id);
-      await this.fetchAll();
+    authorizeEmail(item) {
+      const id = item?.id ?? item;
+      this.sidebar.open({ mode: 'authorize-email', purchaseOrderId: id });
     },
     async markDelivered(item) {
       if (!item?.id) return;
@@ -232,7 +276,9 @@ export default {
     },
   },
   components: {
-    PurchaseOrderSidebar: defineAsyncComponent(() => import('~/components/sidebars/purchaseOrder.vue')),
+    PurchaseOrderSidebar: defineAsyncComponent(
+      () => import('~/components/sidebars/purchaseOrder.vue'),
+    ),
   },
 };
 </script>
